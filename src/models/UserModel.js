@@ -44,6 +44,9 @@ const UserSchema = mongoose.Schema(
     lastLogin: {
       type: String,
     },
+    lastRefresh: {
+      type: String,
+    },
   },
   {
     timestamps: true,

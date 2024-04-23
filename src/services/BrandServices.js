@@ -4,7 +4,7 @@ export const createBrandService = async (req) => {
     let reqBody = req.body;
     const data = await BrandModel.create(reqBody);
     if (!data) {
-      return { status: "fail", mesasage: "Failed to save Brand" };
+      return { status: "fail", message: "Failed to save Brand" };
     } else {
       return { status: "success", data: data };
     }
@@ -22,7 +22,7 @@ export const updateBrandService = async (req) => {
       { new: true }
     );
     if (!data) {
-      return { status: "fail", mesasage: "Failed to update Brand" };
+      return { status: "fail", message: "Failed to update Brand" };
     } else {
       return { status: "success", data: data };
     }
@@ -36,7 +36,7 @@ export const deleteBrandService = async (req) => {
     let BrandID = req.query.brandId;
     const data = await BrandModel.deleteOne({ _id: BrandID });
     if (!data) {
-      return { status: "fail", mesasage: "Failed to delete Brand" };
+      return { status: "fail", message: "Failed to delete Brand" };
     } else {
       return { status: "success", data: data };
     }
@@ -49,7 +49,7 @@ export const listBrandService = async (req) => {
   try {
     const data = await BrandModel.find();
     if (!data) {
-      return { status: "fail", mesasage: "Failed to load Brand list" };
+      return { status: "fail", message: "Failed to load Brand list" };
     } else {
       return { status: "success", data: data };
     }

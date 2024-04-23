@@ -4,7 +4,7 @@ export const createCategoryService = async (req) => {
     let reqBody = req.body;
     const data = await CategoryModel.create(reqBody);
     if (!data) {
-      return { status: "fail", mesasage: "Failed to save Category" };
+      return { status: "fail", message: "Failed to save Category" };
     } else {
       return { status: "success", data: data };
     }
@@ -22,7 +22,7 @@ export const updateCategoryService = async (req) => {
       { new: true }
     );
     if (!data) {
-      return { status: "fail", mesasage: "Failed to update Category" };
+      return { status: "fail", message: "Failed to update Category" };
     } else {
       return { status: "success", data: data };
     }
@@ -36,7 +36,7 @@ export const deleteCategoryService = async (req) => {
     let CategoryID = req.query.categoryId;
     const data = await CategoryModel.deleteOne({ _id: CategoryID });
     if (!data) {
-      return { status: "fail", mesasage: "Failed to delete Category" };
+      return { status: "fail", message: "Failed to delete Category" };
     } else {
       return { status: "success", data: data };
     }
@@ -49,7 +49,7 @@ export const listCategoryService = async (req) => {
   try {
     const data = await CategoryModel.find();
     if (!data) {
-      return { status: "fail", mesasage: "Failed to load Category list" };
+      return { status: "fail", message: "Failed to load Category list" };
     } else {
       return { status: "success", data: data };
     }

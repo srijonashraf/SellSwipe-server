@@ -13,7 +13,6 @@ const BrandSchema = new mongoose.Schema(
       {
         modelName: {
           type: String,
-          unique: true,
         },
         modelImg: {
           type: String,

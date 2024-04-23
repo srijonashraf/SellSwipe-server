@@ -16,7 +16,7 @@ const AdminSchema = mongoose.Schema(
       type: String, //Admin/SuperAdmin
     },
     ref: {
-      type: String, //Appointed By
+      type: Object, //Appointed By
     },
     approvedPosts: {
       type: [String],
@@ -28,6 +28,9 @@ const AdminSchema = mongoose.Schema(
       type: [String],
     },
     restrictedAccounts: {
+      type: [String],
+    },
+    sessionId: {
       type: [String],
     },
   },

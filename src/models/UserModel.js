@@ -8,6 +8,10 @@ const UserSchema = mongoose.Schema(
     name: {
       type: String,
     },
+    role: {
+      type: String,
+      default: "User",
+    },
     photo: {
       type: String,
     },
@@ -46,6 +50,9 @@ const UserSchema = mongoose.Schema(
     },
     lastRefresh: {
       type: String,
+    },
+    sessionId: {
+      type: [String],
     },
   },
   {

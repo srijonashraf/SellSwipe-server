@@ -15,7 +15,7 @@ const SessionDetailsSchema = mongoose.Schema(
       type: String,
     },
     location: {
-      type: String,
+      type: Object,
     },
     ipAddress: {
       type: String,

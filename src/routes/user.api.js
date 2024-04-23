@@ -1,7 +1,7 @@
 import express from "express";
 import * as PostController from "../controllers/PostController.js";
-const router = express.Router();
+const userRouter = express.Router();
 
-router.post("/createPost", PostController.CreatePost);
+userRouter.post("/createPost", PostController.CreatePost);
 
-export default router;
+export default userRouter;

@@ -7,8 +7,9 @@ import mongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import hpp from "hpp";
-import router from "./src/routes/api.js";
+import router from "./src/routes/user.api.js";
 import { trackRefresh } from "./src/middlewares/LastRefreshMiddleware.js";
+import adminRouter from "./src/routes/admin.api.js";
 
 dotenv.config();
 const app = new express();
@@ -46,5 +47,6 @@ app.get("/", function (req, res) {
 });
 
 app.use("/api/v1/", router);
+app.use("/admin/api/v1/", adminRouter);
 
 export default app;

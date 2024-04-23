@@ -7,15 +7,17 @@ import mongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import hpp from "hpp";
-import router from "./src/routes/user.api.js";
 import { trackRefresh } from "./src/middlewares/LastRefreshMiddleware.js";
 import adminRouter from "./src/routes/admin.api.js";
+import userRouter from "./src/routes/user.api.js";
+import router from "./src/routes/public.api.js";
 
 dotenv.config();
 const app = new express();
 app.disable("x-powered-by");
 
 //Applying Middlewares
+app.use(trackRefresh);
 app.use(cookieParser());
 app.use(express.json({ limit: process.env.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ limit: process.env.MAX_URL_ENCODED_SIZE }));
@@ -26,7 +28,6 @@ app.use(
     limit: process.env.REQ_LIMIT_NUMBER,
   })
 );
-app.use(trackRefresh);
 app.use(cors());
 app.use(helmet());
 app.use(hpp());
@@ -46,7 +47,8 @@ app.get("/", function (req, res) {
   res.send("Hello from SellSwipe");
 });
 
-app.use("/api/v1/", router);
+app.use("/user/api/v1/", userRouter);
 app.use("/admin/api/v1/", adminRouter);
+app.use("/api/v1/", router); //Public Router
 
 export default app;

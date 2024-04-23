@@ -2,6 +2,7 @@ import express from "express";
 import * as AdminController from "../controllers/AdminController.js";
 import * as BrandController from "../controllers/BrandController.js";
 import * as CategoryController from "../controllers/CategoryContoller.js";
+import * as ModelController from "../controllers/ModelController.js";
 import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
 import { permissionCheck } from "../middlewares/PermissionCheckMiddleware.js";
 
@@ -25,6 +26,10 @@ adminRouter.get("/deleteBrand",AuthVerifyMiddlware,permissionCheck("SuperAdmin")
 adminRouter.post("/createCategory",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),CategoryController.createCategory);
 adminRouter.post("/updateCategory",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),CategoryController.updateCategory);
 adminRouter.get("/deleteCategory",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),CategoryController.deleteCategory);
+
+adminRouter.post("/createModel",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),ModelController.createModel);
+adminRouter.post("/updateModel",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),ModelController.updateModel);
+adminRouter.get("/deleteModel",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),ModelController.deleteModel);
 
 
 export default adminRouter;

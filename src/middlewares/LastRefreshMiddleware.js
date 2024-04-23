@@ -1,4 +1,3 @@
-import UserModel from "../models/UserModel";
 
 export const trackRefresh = async (req, res, next) => {
   const currentTime = new Date().toISOString();

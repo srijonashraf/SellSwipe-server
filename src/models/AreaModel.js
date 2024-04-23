@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const AreaSchema = mongoose.Schema(
   {
-    name: {
+    areaName: {
       type: String,
       unique: true,
     },

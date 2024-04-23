@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const DivisionSchema = mongoose.Schema(
   {
-    name: {
+    divisionName: {
       type: String,
       unique: true,
     },

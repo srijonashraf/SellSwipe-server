@@ -52,7 +52,7 @@ const UserSchema = mongoose.Schema(
       type: String,
     },
     sessionId: {
-      type: [String],
+      type: [mongoose.Schema.Types.ObjectId],
     },
   },
   {

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const DistrictSchema = mongoose.Schema(
   {
-    name: {
+    districtName: {
       type: String,
       unique: true,
     },
@@ -18,4 +18,4 @@ const DistrictSchema = mongoose.Schema(
 
 const DistrictModel = mongoose.model("districts", DistrictSchema);
 
-export default DistrictSchema;
+export default DistrictModel;

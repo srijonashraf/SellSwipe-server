@@ -3,6 +3,7 @@ import * as AdminController from "../controllers/AdminController.js";
 import * as BrandController from "../controllers/BrandController.js";
 import * as CategoryController from "../controllers/CategoryContoller.js";
 import * as ModelController from "../controllers/ModelController.js";
+import * as LocationController from "../controllers/LocationController.js"
 import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
 import { permissionCheck } from "../middlewares/PermissionCheckMiddleware.js";
 
@@ -30,6 +31,19 @@ adminRouter.get("/deleteCategory",AuthVerifyMiddlware,permissionCheck("SuperAdmi
 adminRouter.post("/createModel",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),ModelController.createModel);
 adminRouter.post("/updateModel",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),ModelController.updateModel);
 adminRouter.get("/deleteModel",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),ModelController.deleteModel);
+
+adminRouter.post("/createDivision",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.createDivision);
+adminRouter.post("/updateDivision",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.updateDivision);
+adminRouter.get("/deleteDivision",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.deleteDivision);
+
+adminRouter.post("/createDistrict",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.createDistrict);
+adminRouter.post("/updateDistrict",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.updateDistrict);
+adminRouter.get("/deleteDistrict",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.deleteDistrict);
+
+adminRouter.post("/createArea",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.createArea);
+adminRouter.post("/updateArea",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.updateArea);
+adminRouter.get("/deleteArea",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),LocationController.deleteArea);
+
 
 
 export default adminRouter;

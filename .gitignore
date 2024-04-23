@@ -1,3 +1,5 @@
 node_modules
 .env
 DB_Schema.dmm
+district_id's.txt
+bd_districts_areas.json

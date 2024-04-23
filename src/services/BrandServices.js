@@ -47,7 +47,7 @@ export const deleteBrandService = async (req) => {
 
 export const listBrandService = async (req) => {
   try {
-    const data = await BrandModel.find();
+    const data = await BrandModel.find().select("-createdAt -updatedAt");
     if (!data) {
       return { status: "fail", message: "Failed to load Brand list" };
     } else {

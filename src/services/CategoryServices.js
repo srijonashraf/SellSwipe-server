@@ -47,7 +47,7 @@ export const deleteCategoryService = async (req) => {
 
 export const listCategoryService = async (req) => {
   try {
-    const data = await CategoryModel.find();
+    const data = await CategoryModel.find().select("-createdAt -updatedAt");
     if (!data) {
       return { status: "fail", message: "Failed to load Category list" };
     } else {

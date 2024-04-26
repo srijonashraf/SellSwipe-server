@@ -62,6 +62,7 @@ export const addNewAdminService = async (req) => {
     if (!data) {
       return { status: "fail", message: "Failed to add new admin" };
     }
+    //Added superAdmin info in the ref
     data.ref = { name: req.headers.name, id: req.headers.id };
     await data.save();
     return { status: "success", data: data };

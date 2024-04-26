@@ -7,9 +7,14 @@ const OtpSchema = mongoose.Schema(
     },
     email: {
       type: String,
+      lowercase: true,
     },
     otp: {
       type: String,
+    },
+    expired: {
+      type: Boolean,
+      default: false,
     },
   },
   {

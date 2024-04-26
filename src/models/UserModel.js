@@ -4,6 +4,9 @@ const UserSchema = mongoose.Schema(
   {
     email: {
       type: String,
+      unique: true,
+      lowercase: true,
+      immutable: true, // Can't be changed
     },
     name: {
       type: String,
@@ -35,6 +38,10 @@ const UserSchema = mongoose.Schema(
     },
     nidVerified: {
       type: Boolean,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
     phoneVerified: {
       type: String,

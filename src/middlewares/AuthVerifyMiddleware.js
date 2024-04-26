@@ -2,12 +2,14 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import UserModel from "../models/UserModel.js";
 import AdminModel from "../models/AdminModel.js";
-import { trackRefresh } from "./LastRefreshMiddleware.js";
+import SessionDetailsModel from "../models/SessionDetailsModel.js";
 dotenv.config({ path: "../../.env" });
 
 export default async (req, res, next) => {
   try {
     let token = req.headers.accessToken || req.cookies.accessToken;
+    let refreshToken = req.headers.refreshToken || req.cookies.refreshToken;
+
     if (!token) {
       return res.status(401).json({
         status: "fail",
@@ -28,26 +30,73 @@ export default async (req, res, next) => {
         let id = decoded["id"];
         let role = decoded["role"];
 
-        if (role === "user") {
+        if (role === "User") {
           const response = await UserModel.findOne({ _id: id }).select(
-            "_id name email role"
+            "_id name email role sessionId"
           );
           if (!response) {
             return res.status(401).json({ status: "Invalid Access Token" });
           }
+
+          //Check if the accessToken and sessionId match with the DB stored sessiondetails's accessToken and the user's sessionId
+
+          const extractSessionToken = await SessionDetailsModel.findOne({
+            accessToken: token,
+            refreshToken: refreshToken,
+            _id: { $in: response.sessionId }, //Check if the session details id is in the user's sessionId array or not
+          }).select("_id");
+
+          if (!extractSessionToken) {
+            return res.status(401).json({
+              status: "fail",
+              message: "Invalid or expired Access Token",
+            });
+          }
+
           req.headers.id = response._id;
           req.headers.role = response.role;
           req.headers.name = response.name;
+
+          let cookieOption = {
+            maxAge: Math.floor(Date.now() / 1000) + 6 * 24 * 60 * 60,
+            httpOnly: true,
+          };
+          res.cookie("id", response._id, cookieOption);
+          res.cookie("name", response.name, cookieOption);
         } else {
           const response = await AdminModel.findOne({ _id: id }).select(
-            "_id name email role"
+            "_id name email role sessionId"
           );
           if (!response) {
             return res.status(401).json({ status: "Invalid Access Token" });
           }
+
+          //Check if the accessToken and sessionId match with the DB stored sessiondetails's accessToken and the user's sessionId
+
+          const extractSessionToken = await SessionDetailsModel.findOne({
+            accessToken: token,
+            refreshToken: refreshToken,
+            _id: { $in: response.sessionId }, //Check if the session details id is in the user's sessionId array or not
+          }).select("_id");
+
+          if (!extractSessionToken) {
+            return res.status(401).json({
+              status: "fail",
+              message: "Invalid or expired Access Token",
+            });
+          }
+
           req.headers.id = response._id;
           req.headers.role = response.role;
           req.headers.name = response.name;
+
+          let cookieOption = {
+            maxAge: Math.floor(Date.now() / 1000) + 6 * 24 * 60 * 60,
+            httpOnly: true,
+          };
+
+          res.cookie("id", response._id, cookieOption);
+          res.cookie("name", response.name, cookieOption);
         }
 
         next();

@@ -17,8 +17,8 @@ const app = new express();
 app.disable("x-powered-by");
 
 //Applying Middlewares
-app.use(trackRefresh);
 app.use(cookieParser());
+app.use(trackRefresh);
 app.use(express.json({ limit: process.env.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ limit: process.env.MAX_URL_ENCODED_SIZE }));
 
@@ -47,8 +47,8 @@ app.get("/", function (req, res) {
   res.send("Hello from SellSwipe");
 });
 
-app.use("/user/api/v1/", userRouter);
-app.use("/admin/api/v1/", adminRouter);
+app.use("/user/api/v1/", userRouter); //User Router
+app.use("/admin/api/v1/", adminRouter); //Admin Router
 app.use("/api/v1/", router); //Public Router
 
 export default app;

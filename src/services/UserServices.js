@@ -14,7 +14,9 @@ export const userRegistrationService = async (req) => {
   try {
     const reqBody = req.body;
     const userEmail = req.body.email;
-    const existingUser = await UserModel.find({ email: userEmail }).count();
+    const existingUser = await UserModel.find({
+      email: userEmail,
+    }).count();
     if (!existingUser) {
       const response = await UserModel.create(reqBody);
       return { status: "success", data: response };
@@ -38,7 +40,11 @@ export const userLoginService = async (req) => {
         message: "No account associated with this email",
       };
 
-    if (user.password !== reqBody.password) {
+    const isCorrectPassword = await user.isPasswordCorrect(reqBody.password);
+    console.log(isCorrectPassword);
+    if (!isCorrectPassword) {
+      user.loginAttempt += 1;
+      await user.save();
       return {
         status: "fail",
         message: "Wrong credential",
@@ -75,6 +81,8 @@ export const userLoginService = async (req) => {
     if (user.sessionId && Array.isArray(user.sessionId)) {
       user.sessionId.push(session._id);
       user.lastLogin = new Date().toISOString();
+      user.loginAttempt = 0;
+      user.limitedLogin = "";
       await user.save();
     } else {
       console.error(
@@ -216,8 +224,6 @@ export const userEmailVerifyService = async (req) => {
     return { status: "fail", message: "Something went wrong" };
   }
 };
-
-//OTP exist only 3 mins, (Date.now() - createdAt < mins => OTP will work)
 
 export const OTPVerifyService = async (req) => {
   try {

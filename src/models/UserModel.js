@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import bcrypt from "bcrypt";
 const UserSchema = mongoose.Schema(
   {
     email: {
@@ -20,6 +20,7 @@ const UserSchema = mongoose.Schema(
     },
     password: {
       type: String,
+      required: [true, "Please enter a Password"],
     },
     nidNumber: {
       type: Number,
@@ -61,12 +62,35 @@ const UserSchema = mongoose.Schema(
     sessionId: {
       type: [mongoose.Schema.Types.ObjectId],
     },
+    loginAttempt: {
+      type: Number,
+      default: 0,
+    },
+    limitedLogin: {
+      type: String,
+    },
   },
   {
     timestamps: true,
     versionKey: false,
   }
 );
+
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+UserSchema.methods.isPasswordCorrect = async function (password) {
+  try {
+    const response = await bcrypt.compare(password, this.password);
+    return response;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+};
 
 const UserModel = mongoose.model("users", UserSchema);
 

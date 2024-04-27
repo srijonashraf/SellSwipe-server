@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const AdminSchema = mongoose.Schema(
   {
@@ -39,6 +40,22 @@ const AdminSchema = mongoose.Schema(
     versionKey: false,
   }
 );
+
+AdminSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+AdminSchema.methods.isPasswordCorrect = async function (password) {
+  try {
+    const response = await bcrypt.compare(password, this.password);
+    return response;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+};
 
 const AdminModel = mongoose.model("admins", AdminSchema);
 

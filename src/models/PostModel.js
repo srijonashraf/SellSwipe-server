@@ -23,14 +23,23 @@ const PostSchema = mongoose.Schema(
     stock: {
       type: String,
     },
-    OnReview: {
+    onReview: {
       type: Boolean,
+      default: true,
     },
-    isAccepted: {
+    isApproved: {
       type: Boolean,
+      default: false,
     },
     approvedBy: {
-      type: String,
+      type: Object,
+    },
+    isDeclined: {
+      type: Boolean,
+      default: false,
+    },
+    declinedBy: {
+      type: Object,
     },
     isActive: {
       type: Boolean,
@@ -60,6 +69,9 @@ const PostSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
     },
     address: {
+      type: String,
+    },
+    feedback: {
       type: String,
     },
   },

@@ -10,14 +10,29 @@ import { permissionCheck } from "../middlewares/PermissionCheckMiddleware.js";
 const adminRouter = express.Router();
 
 adminRouter.post("/login",AdminController.adminLogin);
+adminRouter.get("/adminProfileDetails", AuthVerifyMiddlware, AdminController.adminProfileDetails);
 
 adminRouter.post("/addAdmin",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),AdminController.addNewAdmin);
 adminRouter.get("/deleteAdmin",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),AdminController.deleteAdmin);
 adminRouter.get("/adminList",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),AdminController.adminList);
 adminRouter.get("/userList",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),AdminController.userList);
+
+adminRouter.get("/reviewPostList",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.reviewPostList);
+adminRouter.get("/approvedPostList",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.approvedPostList);
+adminRouter.get("/declinedPostList",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.declinedPostList);
+adminRouter.get("/reportedPostList",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.reportedPostList);
+adminRouter.get("/withdrawReport",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.withdrawReport);
+adminRouter.get("/approvePost",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.approvePost);
+adminRouter.get("/declinePost",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.declinePost);
+adminRouter.get("/sendFeedback",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.sendFeedback);
+
+
+
 adminRouter.get("/warnedAccountList",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.warnedAccountList);
 adminRouter.get("/restrictedAccountList",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.restrictedAccountList);
 adminRouter.get("/withdrawRestrictions",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.withdrawRestrictions);
+adminRouter.get("/warningAccount",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.warningAccount);
+adminRouter.get("/restrictAccount",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.restrictAccount);
 
 
 adminRouter.post("/createBrand",AuthVerifyMiddlware,permissionCheck("SuperAdmin"),BrandController.createBrand);

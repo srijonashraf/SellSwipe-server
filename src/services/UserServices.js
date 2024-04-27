@@ -41,7 +41,6 @@ export const userLoginService = async (req) => {
       };
 
     const isCorrectPassword = await user.isPasswordCorrect(reqBody.password);
-    console.log(isCorrectPassword);
     if (!isCorrectPassword) {
       user.loginAttempt += 1;
       await user.save();

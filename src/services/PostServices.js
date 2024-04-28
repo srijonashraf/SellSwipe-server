@@ -10,3 +10,12 @@ export const CreatePostService = async (req) => {
     return { status: "fail", data: error };
   }
 };
+
+export const PostListService = async (req) => {
+  try {
+    const data = await PostModel.find({ isApproved: true, isActive: true });
+    return { status: "success", data: data };
+  } catch (error) {
+    return { status: "fail", data: error };
+  }
+};

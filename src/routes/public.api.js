@@ -7,6 +7,7 @@ import {
   listDistrict,
   listDivision,
 } from "../controllers/LocationController.js";
+import { PostList } from "../controllers/PostController.js";
 const router = express.Router();
 
 router.get("/listBrand", listBrand);
@@ -15,5 +16,6 @@ router.get("/listModel", listModel);
 router.get("/listDivision", listDivision);
 router.get("/listDistrict", listDistrict);
 router.get("/listArea", listArea);
+router.get("/postList", PostList);
 
 export default router;

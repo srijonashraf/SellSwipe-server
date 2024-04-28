@@ -242,6 +242,7 @@ export const approvePostService = async (req) => {
       {
         $set: {
           isDeclined: false,
+          onReview: false,
           declinedBy: "",
           isApproved: true,
           approvedBy: { id: id, name: name },
@@ -285,6 +286,7 @@ export const declinePostService = async (req) => {
       {
         $set: {
           isApproved: false,
+          onReview: false,
           approvedBy: "",
           isDeclined: true,
           declinedBy: { id: id, name: name },

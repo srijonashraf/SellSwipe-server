@@ -66,7 +66,7 @@ export const adminLoginService = async (req) => {
 
 export const adminProfileDetailsService = async (req) => {
   try {
-    const data = await AdminModel.findOne({ _id: req.headers.id });
+    const data = await AdminModel.findOne({ _id: req.headers.id }).select("-password");
     if (!data) {
       return { status: "fail", message: "Failed to load admin profile" };
     }

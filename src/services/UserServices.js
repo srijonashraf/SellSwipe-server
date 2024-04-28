@@ -8,6 +8,7 @@ import {
 import SessionDetailsModel from "../models/SessionDetailsModel.js";
 import OtpModel from "./../models/OtpModel.js";
 import EmailSend from "../helper/EmailHelper.js";
+import bcrypt from "bcrypt";
 const ObjectID = mongoose.Types.ObjectId;
 
 export const userRegistrationService = async (req) => {
@@ -19,6 +20,34 @@ export const userRegistrationService = async (req) => {
     }).count();
     if (!existingUser) {
       const response = await UserModel.create(reqBody);
+
+      let EmailText = `
+      <html>
+      <body>
+        <div style="font-family: Helvetica, Arial, sans-serif; min-width: 1000px; overflow: auto; line-height: 2">
+          <div style="margin: 50px auto; width: 70%; padding: 20px 0">
+            <div style="border-bottom: 1px solid #eee">
+              <a href="" style="font-size: 1.4em; color: #00466a; text-decoration: none; font-weight: 600">SellSwipe</a>
+            </div>
+            <p style="font-size: 1.1em">Hi,</p>
+            <p>Hey, ${reqBody.name}, Welcome to SellSwipe. Your account has been successfully created. You will soon receive an additional email to verify your email address.</p>
+            <p style="font-size: 0.9em;">Regards,<br />SellSwipe</p>
+            <hr style="border: none; border-top: 1px solid #eee" />
+            <div style="float: right; padding: 8px 0; color: #aaa; font-size: 0.8em; line-height: 1; font-weight: 300">
+              <p>SellSwipe Team</p>
+              <p>Dhanmondi, Dhaka</p>
+              <p>Bangladesh</p>
+            </div>
+          </div>
+        </div>
+        </body>
+        </html>
+      `;
+
+      let EmailSubject = "Welcome to SellSwipe";
+
+      await EmailSend(userEmail, EmailText, EmailSubject);
+      await userEmailVerifyService(req);
       return { status: "success", data: response };
     }
     return { status: "fail", message: "This account already exist" };
@@ -176,7 +205,7 @@ export const userProfileUpdateService = async (req) => {
 
 export const userEmailVerifyService = async (req) => {
   try {
-    let userEmail = req.query.email;
+    let userEmail = req.query.email || req.body.email;
     let otp = Math.floor(100000 + Math.random() * 900000);
     const user = await UserModel.findOne({ email: userEmail });
     if (!user) {
@@ -267,9 +296,20 @@ export const OTPVerifyService = async (req) => {
 
 export const recoverResetPasswordService = async (req, res) => {
   try {
+    //!Apply URL based password recovery, user will receive a url basically domain/api/path/token and then they will send a GET requets and backend will verify using token
     let email = req.body.email;
     let otp = req.body.otp;
-    let NewPass = req.body.newPassword;
+    let newPassword = req.body.newPassword;
+    let confirmPassword = req.body.confirmPassword;
+
+    if (newPassword !== confirmPassword) {
+      return {
+        status: "fail",
+        message: "Password didn't matched, Password reset failed",
+      };
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     let response = await OtpModel.findOne({
       email: email,
@@ -280,9 +320,12 @@ export const recoverResetPasswordService = async (req, res) => {
       return { status: "fail", message: "Password reset failed" };
     }
 
-    let setPasswordResponse = await UserModel.updateOne(
+    let setPasswordResponse = await UserModel.findOneAndUpdate(
       { email: email },
-      { password: NewPass }
+      { $set: { password: hashedPassword } },
+      {
+        new: true,
+      }
     );
 
     if (!setPasswordResponse) {

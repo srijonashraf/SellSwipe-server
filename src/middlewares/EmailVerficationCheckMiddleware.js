@@ -7,6 +7,7 @@ export const checkEmailVerification = async (req, res, next) => {
   );
 
   if (!user.emailVerified) {
+    //Call VerifyEmail API
     return res.status(200).json({
       status: "fail",
       message: "Email is not verified, redirect to OTP page",

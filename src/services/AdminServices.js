@@ -66,7 +66,9 @@ export const adminLoginService = async (req) => {
 
 export const adminProfileDetailsService = async (req) => {
   try {
-    const data = await AdminModel.findOne({ _id: req.headers.id }).select("-password");
+    const data = await AdminModel.findOne({ _id: req.headers.id }).select(
+      "-password"
+    );
     if (!data) {
       return { status: "fail", message: "Failed to load admin profile" };
     }
@@ -307,6 +309,22 @@ export const declinePostService = async (req) => {
     }
 
     return { status: "success", data: data };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const deletePostService = async (req) => {
+  try {
+    const postID = req.query.postId;
+    const post = await PostModel.findOneAndDelete({ _id: postID }).select(
+      "userID"
+    );
+    if (!post) {
+      return { status: "fail", message: "Failed to delete post" };
+    }
+    return { status: "success", message: "Post deleted successfully" };
   } catch (error) {
     console.error(error);
     return { status: "fail", message: "Something went wrong" };

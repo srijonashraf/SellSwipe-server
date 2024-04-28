@@ -11,7 +11,9 @@ const NotificationSchema = mongoose.Schema(
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
     },
-
+    senderRole: {
+      type: String,
+    },
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
     },
@@ -20,10 +22,11 @@ const NotificationSchema = mongoose.Schema(
     },
     isRead: {
       type: Boolean,
+      default: false,
     },
   },
   {
-    timestamp: true,
+    timestamps: true,
     versionKey: false,
   }
 );

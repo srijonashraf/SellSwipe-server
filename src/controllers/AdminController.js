@@ -8,6 +8,7 @@ import {
   declinePostService,
   declinedPostListService,
   deleteAdminService,
+  deletePostService,
   reportedPostListService,
   restrictAccountService,
   restrictedAccountListService,
@@ -89,6 +90,11 @@ export const approvePost = async (req, res) => {
 
 export const declinePost = async (req, res) => {
   const result = await declinePostService(req);
+  res.status(200).json(result);
+};
+
+export const deletePost = async (req, res) => {
+  const result = await deletePostService(req);
   res.status(200).json(result);
 };
 

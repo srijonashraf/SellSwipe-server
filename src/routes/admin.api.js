@@ -6,6 +6,7 @@ import * as ModelController from "../controllers/ModelController.js";
 import * as LocationController from "../controllers/LocationController.js"
 import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
 import { permissionCheck } from "../middlewares/PermissionCheckMiddleware.js";
+import { SendNotification } from "../middlewares/NotificationMiddleware.js";
 
 const adminRouter = express.Router();
 
@@ -24,6 +25,7 @@ adminRouter.get("/reportedPostList",AuthVerifyMiddlware,permissionCheck("SuperAd
 adminRouter.get("/withdrawReport",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.withdrawReport);
 adminRouter.get("/approvePost",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.approvePost);
 adminRouter.get("/declinePost",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.declinePost);
+adminRouter.get("/deletePost",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),SendNotification,AdminController.deletePost);
 adminRouter.get("/sendFeedback",AuthVerifyMiddlware,permissionCheck("SuperAdmin", "Admin"),AdminController.sendFeedback);
 
 

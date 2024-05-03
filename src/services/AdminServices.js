@@ -441,7 +441,7 @@ export const warningAccountService = async (req) => {
     let id = req.query.id;
     const data = await UserModel.findOneAndUpdate(
       { _id: id },
-      { $set: { accountStatus: "Warning" } },
+      { $set: { accountStatus: "Warning" }, $inc: { warningCount: 1 } },
       { new: true }
     );
     if (!data) {

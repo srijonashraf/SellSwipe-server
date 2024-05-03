@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
+
 const UserSchema = mongoose.Schema(
   {
     email: {
@@ -15,8 +16,9 @@ const UserSchema = mongoose.Schema(
       type: String,
       default: "User",
     },
-    photo: {
-      type: String,
+    avatar: {
+      url: String,
+      pid: String, // pid = public_id of cloudinary
     },
     password: {
       type: String,
@@ -26,10 +28,16 @@ const UserSchema = mongoose.Schema(
       type: Number,
     },
     nidFront: {
-      type: String,
+      url: String,
+      pid: String,
     },
     nidBack: {
-      type: String,
+      url: String,
+      pid: String,
+    },
+    nidSubmitted: {
+      type: Boolean, // If NID is submitted then the field for nidFront and nidBack will be disabled
+      default: false,
     },
     phone: {
       type: String,
@@ -45,10 +53,11 @@ const UserSchema = mongoose.Schema(
       default: false,
     },
     phoneVerified: {
-      type: String,
+      type: Boolean,
     },
     accountStatus: {
       type: String,
+      default: "Validate", //Validated, Warning, Restricted
     },
     warningCount: {
       type: Number,
@@ -61,6 +70,7 @@ const UserSchema = mongoose.Schema(
     },
     sessionId: {
       type: [mongoose.Schema.Types.ObjectId],
+      ref: "sessiondetails" //It will connect a reference to SessionModel which will make it easier to extract value in UserModel from SessionModel
     },
     loginAttempt: {
       type: Number,
@@ -92,6 +102,6 @@ UserSchema.methods.isPasswordCorrect = async function (password) {
   }
 };
 
-const UserModel = mongoose.model("users", UserSchema);
+const UserModel = mongoose.model("User", UserSchema);
 
 export default UserModel;

@@ -4,12 +4,15 @@ const PostDetailsSchema = mongoose.Schema(
   {
     postID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
-    des: {
+    description: {
       type: String,
+      required: true,
     },
     img1: {
       type: String,
+      required: true,
     },
     img2: {
       type: String,
@@ -20,35 +23,41 @@ const PostDetailsSchema = mongoose.Schema(
     img4: {
       type: String,
     },
-    img5: {
-      type: String,
-    },
     size: {
-      type: String,
+      type: [String],
+      required: true,
     },
     color: {
       type: [String],
-    },
-    features: {
-      type: String,
+      required: true,
     },
     authenticity: {
       type: String,
+      required: true,
     },
     condition: {
       type: String,
+      required: true,
     },
     usedMonths: {
       type: String,
+      required: true,
     },
     brandID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+    modelID: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     categoryID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     keyword: {
       type: [String],
+      required: true,
     },
   },
   {

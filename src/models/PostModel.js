@@ -4,24 +4,35 @@ const PostSchema = mongoose.Schema(
   {
     userID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     title: {
       type: String,
+      required: true,
     },
     price: {
-      type: String,
+      type: Number,
+      required: true,
     },
     discount: {
-      type: String,
+      type: Boolean,
     },
     discountPrice: {
-      type: String,
+      type: Number,
+    },
+    discountPercentage: {
+      type: Number,
     },
     mainImg: {
       type: String,
     },
     stock: {
       type: String,
+      required: true,
+    },
+    otherPhone: {
+      type: String,
+      required: true,
     },
     onReview: {
       type: Boolean,
@@ -43,6 +54,7 @@ const PostSchema = mongoose.Schema(
     },
     isActive: {
       type: Boolean,
+      default: true,
     },
     isDeleted: {
       type: String,
@@ -61,15 +73,19 @@ const PostSchema = mongoose.Schema(
     },
     divisionID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     districtID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     areaID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     address: {
       type: String,
+      required: true,
     },
     feedback: {
       type: String,

@@ -72,6 +72,12 @@ export const userLoginService = async (req) => {
         message: "No account associated with this email",
       };
 
+    if (user.accountStatus === "Restricted") {
+      return {
+        status: "fail",
+        message: "Login Failed, Your account is Restricted",
+      };
+    }
     const isCorrectPassword = await user.isPasswordCorrect(reqBody.password);
     if (!isCorrectPassword) {
       user.loginAttempt += 1;

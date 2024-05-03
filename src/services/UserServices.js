@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import UserModel from "./../models/UserModel.js";
-import { uploadOnCloudinary } from "./../utility/Cloudinary.js";
+import {
+  destroyOnCloudinary,
+  uploadOnCloudinary,
+} from "./../utility/Cloudinary.js";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -137,39 +140,85 @@ export const userLoginService = async (req) => {
   }
 };
 
-export const userProfilePhotoUpdateService = async (req) => {
+export const userAvatarUpdateService = async (req) => {
   try {
     let userID = new ObjectID(req.headers.id);
-    // const filePath = req.file.path; // for upload.single("file") *only one file is allowed*
-    const filePath = req.files[0]?.path; // for upload.any() *multiple files can be sent in req*
+    const filePath = req.file.path; //For single file
     if (!filePath) {
       throw new Error("No files uploaded.");
     }
-    const userPhoto = await uploadOnCloudinary(filePath);
-    const response = await UserModel.updateOne(
-      { _id: userID },
-      { photo: userPhoto.secure_url },
-      { new: true }
-    );
-    if (!userPhoto && !response) {
+
+    //Upload on cloudinary
+    const userAvatar = await uploadOnCloudinary(filePath);
+    const response = await UserModel.findOne({ _id: userID }).exec();
+    //At first delete the avatar if any
+    if (response.avatar.pid) {
+      await destroyOnCloudinary(response.avatar.pid);
+    }
+
+    response.avatar = {
+      url: userAvatar.secure_url,
+      pid: userAvatar.public_id,
+    };
+
+    await response.save();
+
+    if (!response) {
       return { status: "fail", message: "Failed to update profile photo" };
     }
-    return { status: "success", data: userPhoto };
+    return { status: "success", cloudinary: userAvatar, data: response };
   } catch (error) {
     console.error(error);
     return { status: "fail", message: "Something went wrong" };
   }
 };
 
-export const userProfileDetailsService = async (req) => {
+export const userNidUpdateRequestService = async (req) => {
   try {
     let userID = new ObjectID(req.headers.id);
-    const user = await UserModel.findOne({ _id: userID }).select(
-      "-password -sessionId -phoneVerified -nidVerified -emailVerified -accountStatus -warningCount"
-    );
-    if (!user) {
-      return { status: "fail", message: "Failed to load user profile" };
+    const filePaths = req.files;
+    if (!filePaths) {
+      throw new Error("No files uploaded.");
     }
+    const { nidFront, nidBack } = filePaths;
+
+    if (!nidFront || !nidBack) {
+      throw new Error("File missing.");
+    }
+
+    //Upload on Cloudinary
+    const nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
+    const nidBackResponse = await uploadOnCloudinary(nidBack[0].path);
+
+    const user = await UserModel.findOne({ _id: userID }).exec();
+
+    if (!user) {
+      return { status: "fail", message: "User not found." };
+    }
+
+    //Delete Existing File
+    if (user.nidFront && user.nidFront.pid) {
+      await destroyOnCloudinary(user.nidFront.pid);
+    }
+    if (user.nidBack && user.nidBack.pid) {
+      await destroyOnCloudinary(user.nidBack.pid);
+    }
+
+    //Save new file links
+    user.nidFront = {
+      url: nidFrontResponse.secure_url,
+      pid: nidFrontResponse.public_id,
+    };
+
+    user.nidBack = {
+      url: nidBackResponse.secure_url,
+      pid: nidBackResponse.public_id,
+    };
+
+    user.nidSubmitted = true;
+
+    await user.save();
+
     return { status: "success", data: user };
   } catch (error) {
     console.error(error);
@@ -187,6 +236,7 @@ export const userProfileUpdateService = async (req) => {
       { $set: req.body },
       { new: true }
     ).select("-password");
+
     if (!response) {
       return { status: "fail", message: "Failed to update profile details" };
     }
@@ -197,6 +247,21 @@ export const userProfileUpdateService = async (req) => {
     };
   } catch (error) {
     console.log(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+export const userProfileDetailsService = async (req) => {
+  try {
+    let userID = new ObjectID(req.headers.id);
+    const user = await UserModel.findOne({ _id: userID }).select(
+      "-password -sessionId -phoneVerified -nidVerified -emailVerified -accountStatus -warningCount"
+    );
+    if (!user) {
+      return { status: "fail", message: "Failed to load user profile" };
+    }
+    return { status: "success", data: user };
+  } catch (error) {
+    console.error(error);
     return { status: "fail", message: "Something went wrong" };
   }
 };
@@ -334,6 +399,55 @@ export const recoverResetPasswordService = async (req, res) => {
     response.otp = 0;
     await response.save();
     return { status: "success", message: "Password reset successfully" };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const userAllSessionService = async (req, res) => {
+  try {
+    let userID = new ObjectID(req.headers.id);
+    const user = await UserModel.findOne({ _id: userID }).populate(
+      "sessionId",
+      "-accessToken -refreshToken -ipAddress -createdAt -updatedAt"
+    );
+
+    if (!user) {
+      return { status: "fail", message: "User not found" };
+    }
+
+    return { status: "success", data: user.sessionId };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const userLogoutFromSessionService = async (req, res) => {
+  try {
+    //TODO Add a middleware in app.js to check the cookies token with db token everytime, suppose any user just deleted a session so the token will be deleted from db but still stay on the client side this middlware will catch the issue and generate a error of Session Expired
+    //!Note: AuthMiddleware already doing his job matching the session details with User Model. So we will add the above mentioned middlware later for more better and faster session inspect experience
+    let sessionID = req.query.sessionId;
+    const matchSessionWithUser = await UserModel.findOne({
+      _id: req.headers.id,
+      sessionId: sessionID,
+    }).select("sessionId");
+
+    if (!matchSessionWithUser) {
+      return {
+        status: "fail",
+        message:
+          "Failed to Logout from the Session. SessionID not found in User Model",
+      };
+    }
+
+    const response = await SessionDetailsModel.deleteOne({ _id: sessionID });
+
+    if (!response.deletedCount) {
+      return { status: "fail", message: "Failed to Logout from Session" };
+    }
+    return { status: "success", message: "Logged out from the Session" };
   } catch (error) {
     console.error(error);
     return { status: "fail", message: "Something went wrong" };

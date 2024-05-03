@@ -5,6 +5,14 @@ export const checkLoginAttempts = async (req, res, next) => {
   const user = await UserModel.findOne({ email: email }).select(
     "email loginAttempt limitedLogin"
   );
+
+  if (!user) {
+    return res.status(200).json({
+      status: "fail",
+      message: "No account associated with this email",
+    });
+  }
+
   // Check if limitedLogin time has passed and reset loginAttempt and limitedLogin
   if (user.limitedLogin && user.limitedLogin <= Date.now()) {
     user.loginAttempt = 0;

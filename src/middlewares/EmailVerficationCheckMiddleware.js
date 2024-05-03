@@ -6,6 +6,13 @@ export const checkEmailVerification = async (req, res, next) => {
     "emailVerified"
   );
 
+  if (!user) {
+    return res.status(200).json({
+      status: "fail",
+      message: "No account associated with this email",
+    });
+  }
+
   if (!user.emailVerified) {
     //Call VerifyEmail API
     return res.status(200).json({

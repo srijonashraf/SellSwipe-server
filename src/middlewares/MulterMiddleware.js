@@ -17,22 +17,23 @@ const storage = multer.diskStorage({
       .toLowerCase()
       .split(" ")
       .join("-");
-    cb(null, fileName + Date.now() + fileExt);
+    cb(null, fileName + "-" + Date.now() + fileExt);
   },
 });
 
 export const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 1000000,
+    fileSize: 1000000, //1MB
   },
 
   //Set file filter
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === "image/jpg" || file.mimetype === "image/jpeg") {
+    const allowedTypes = ["image/jpeg", "image/jpeg", "image/png"];
+    if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only .jpg, .jpeg, format allowed"));
+      cb(new Error("Only .jpg, .jpeg, png format allowed"));
     }
   },
 });

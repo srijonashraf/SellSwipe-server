@@ -28,3 +28,20 @@ export const uploadOnCloudinary = async (localFilePath) => {
     return null;
   }
 };
+
+export const destroyOnCloudinary = async (pid) => {
+  try {
+    if (!pid) return null;
+    const response = await cloudinary.uploader.destroy(pid, {
+      invalidate: true,
+    });
+
+    if (!response) {
+      console.log("Failed to destroy file");
+      return null;
+    }
+    return response;
+  } catch (error) {
+    return null;
+  }
+};

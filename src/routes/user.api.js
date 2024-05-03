@@ -13,9 +13,14 @@ userRouter.post("/login", checkLoginAttempts, checkEmailVerification, UserContro
 userRouter.get("/verifyEmail", UserController.userEmailVerify);
 userRouter.get("/verifyOTP", UserController.OTPVerify);
 userRouter.post("/resetPassword", UserController.recoverResetPassword);
-userRouter.post("/updateProfilePhoto", AuthVerifyMiddlware, upload.any(), UserController.userProfilePhotoUpdate);
+userRouter.post("/updateAvatar", AuthVerifyMiddlware, upload.single("avatar"), UserController.userAvatarUpdate);
 userRouter.post("/updateProfile", AuthVerifyMiddlware, UserController.userProfileUpdate);
+userRouter.post("/updateNidRequest", AuthVerifyMiddlware,upload.fields([{ name: 'nidFront', maxCount: 1 }, { name: 'nidBack', maxCount: 8 }]),UserController.userNidUpdateRequest);
 userRouter.get("/profileDetails", AuthVerifyMiddlware, UserController.userProfileDetails);
-userRouter.post("/createPost", AuthVerifyMiddlware, checkNidVerification, PostController.CreatePost);
+userRouter.get("/allSession", AuthVerifyMiddlware, UserController.userAllSession);
+userRouter.get("/logoutFromSession", AuthVerifyMiddlware, UserController.userLogoutFromSession);
+
+//Temporariry giving access without checkNidVerficaion middleware for test
+userRouter.post("/createPost", AuthVerifyMiddlware, upload.array('images', 5), PostController.CreatePost);
 
 export default userRouter;

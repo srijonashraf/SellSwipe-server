@@ -24,7 +24,8 @@ const PostSchema = mongoose.Schema(
       type: Number,
     },
     mainImg: {
-      type: String,
+      url: String,
+      pid: String,
     },
     stock: {
       type: String,

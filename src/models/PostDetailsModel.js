@@ -11,17 +11,20 @@ const PostDetailsSchema = mongoose.Schema(
       required: true,
     },
     img1: {
-      type: String,
-      required: true,
+      url: { type: String, required: true },
+      pid: { type: String, required: true },
     },
     img2: {
-      type: String,
+      url: String,
+      pid: String,
     },
     img3: {
-      type: String,
+      url: String,
+      pid: String,
     },
     img4: {
-      type: String,
+      url: String,
+      pid: String,
     },
     size: {
       type: [String],

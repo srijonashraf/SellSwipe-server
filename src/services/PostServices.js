@@ -148,7 +148,7 @@ export const CreatePostService = async (req) => {
   }
 };
 
-//TODO Set {url, pid} in every image field of PostModel, make a function to upload images with params, user will be able to edit post then the images will be shown in their panel and they can modify any one if needed for this carry all the image url and pid when edit post API fired and update those again and delete previously uploaded images to free up spaces
+//ToDo: User will be able to delete specific image of the post, maximum 5 images are allowed to upload.
 
 export const PostListService = async (req) => {
   try {

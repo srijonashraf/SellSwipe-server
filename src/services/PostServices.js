@@ -66,6 +66,10 @@ const calculateDiscountPercentage = (price, discountPrice) => {
   return ((price - discountPrice) / price) * 100;
 };
 
+const calculateDiscountPrice = (price, discountPercentage) => {
+  return price - (price * discountPercentage) / 100;
+};
+
 export const CreatePostService = async (req) => {
   try {
     let reqBody = req.body;
@@ -84,8 +88,10 @@ export const CreatePostService = async (req) => {
     // Calculate discountPrice if discountPercentage is provided
     if (PostData.discountPercentage) {
       PostData.discount = true;
-      PostData.discountPrice =
-        PostData.price - (PostData.price * PostData.discountPercentage) / 100;
+      PostData.discountPrice = calculateDiscountPrice(
+        PostData.price,
+        PostData.discountPercentage
+      );
     }
 
     //If file not found in req then return fail
@@ -99,7 +105,10 @@ export const CreatePostService = async (req) => {
     const cloudinaryUrls = [];
     for (const filePath of filePaths) {
       const cloudinaryResponse = await uploadOnCloudinary(filePath);
-      cloudinaryUrls.push(cloudinaryResponse.secure_url);
+      cloudinaryUrls.push({
+        url: cloudinaryResponse.secure_url,
+        pid: cloudinaryResponse.public_id,
+      }); //Pass as an object
     }
 
     PostData.mainImg = cloudinaryUrls[0]; //First image is the main image / display image

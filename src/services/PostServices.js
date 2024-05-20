@@ -66,6 +66,7 @@ const calculateDiscountPercentage = (price, discountPrice) => {
   return ((price - discountPrice) / price) * 100;
 };
 
+// Function to calculate discount price
 const calculateDiscountPrice = (price, discountPercentage) => {
   return price - (price * discountPercentage) / 100;
 };
@@ -152,7 +153,57 @@ export const CreatePostService = async (req) => {
 
 export const PostListService = async (req) => {
   try {
-    const data = await PostModel.find({ isApproved: true, isActive: true });
+    const data = await PostModel.aggregate([
+      {
+        $match: {
+          isApproved: true,
+          isActive: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userID",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $match: {
+          "user.accountStatus": { $in: ["Validate", "Warning"] },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          userID: {
+            _id: "$user._id",
+            name: "$user.name",
+            email: "$user.email",
+            phone: "$user.phone",
+          },
+          title:1,
+          mainImg: 1,
+          price: 1,
+          discount:1,
+          discountPrice: 1,
+          stock: 1,
+          isActive: 1,
+          editCount: 1,
+          viewsCount: 1,
+          divisionID: 1,
+          districtID: 1,
+          areaID: 1,
+          address: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
+
     return { status: "success", data: data };
   } catch (error) {
     return { status: "fail", data: error };

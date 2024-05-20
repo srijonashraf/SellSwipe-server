@@ -12,6 +12,7 @@ import {
   reportedPostListService,
   restrictAccountService,
   restrictedAccountListService,
+  reviewNidListService,
   reviewPostListService,
   sendFeedbackService,
   userListService,
@@ -36,7 +37,6 @@ export const adminProfileDetails = async (req, res) => {
   const result = await adminProfileDetailsService(req);
   res.status(200).json(result);
 };
-
 
 export const addNewAdmin = async (req, res) => {
   const result = await addNewAdminService(req);
@@ -125,5 +125,10 @@ export const restrictAccount = async (req, res) => {
 
 export const warningAccount = async (req, res) => {
   const result = await warningAccountService(req);
+  res.status(200).json(result);
+};
+
+export const reviewNidList = async (req, res) => {
+  const result = await reviewNidListService(req);
   res.status(200).json(result);
 };

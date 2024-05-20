@@ -465,3 +465,28 @@ export const warningAccountService = async (req) => {
     return { status: "fail", message: "Something went wrong", data: error };
   }
 };
+
+export const reviewNidListService = async (req) => {
+  try {
+    const data = await UserModel.find({
+      nidSubmitted: true,
+      nidFront: { $exists: true, $ne: null },
+      nidBack: { $exists: true, $ne: null },
+    }).select("_id name email nidFront nidBack");
+
+    if (!data) {
+      return {
+        status: "fail",
+        message: "Failed to load review nid list",
+      };
+    }
+
+    return {
+      status: "success",
+      data: data,
+    };
+  } catch (error) {
+    console.log(error);
+    return { status: "fail", message: "Something went wrong", data: error };
+  }
+};

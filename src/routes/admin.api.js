@@ -35,6 +35,7 @@ adminRouter.get("/restrictedAccountList",AuthVerifyMiddlware,checkPermission("Su
 adminRouter.get("/withdrawRestrictions",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.withdrawRestrictions);
 adminRouter.get("/warningAccount",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.warningAccount);
 adminRouter.get("/restrictAccount",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.restrictAccount);
+adminRouter.get("/reviewNidList",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.reviewNidList);
 
 
 adminRouter.post("/createBrand",AuthVerifyMiddlware,checkPermission("SuperAdmin"),BrandController.createBrand);

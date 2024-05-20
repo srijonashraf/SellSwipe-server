@@ -5,6 +5,7 @@ const PostDetailsSchema = mongoose.Schema(
     postID: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "posts",
     },
     description: {
       type: String,

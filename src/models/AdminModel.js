@@ -33,6 +33,7 @@ const AdminSchema = mongoose.Schema(
     },
     sessionId: {
       type: [mongoose.Schema.Types.ObjectId],
+      ref: "sessiondetails",
     },
   },
   {

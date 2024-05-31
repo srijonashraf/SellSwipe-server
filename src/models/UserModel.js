@@ -17,8 +17,14 @@ const UserSchema = mongoose.Schema(
       default: "User",
     },
     avatar: {
-      url: String,
-      pid: String, // pid = public_id of cloudinary
+      url: {
+        type: String,
+        default: "",
+      },
+      pid: {
+        type: String,
+        default: "",
+      },
     },
     password: {
       type: String,
@@ -70,7 +76,7 @@ const UserSchema = mongoose.Schema(
     },
     sessionId: {
       type: [mongoose.Schema.Types.ObjectId],
-      ref: "sessiondetails" //It will connect a reference to SessionModel which will make it easier to extract value in UserModel from SessionModel
+      ref: "sessiondetails", //It will connect a reference to SessionModel which will make it easier to extract value in UserModel from SessionModel
     },
     loginAttempt: {
       type: Number,

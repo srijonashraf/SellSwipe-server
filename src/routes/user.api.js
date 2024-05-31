@@ -24,5 +24,8 @@ userRouter.get("/logoutFromSession", AuthVerifyMiddlware, UserController.userLog
 //Temporariry giving access without checkNidVerficaion middleware for test
 //Could not sent both img file and json body to api request from Postman for this using a index.html to upload both of them
 userRouter.post("/createPost", AuthVerifyMiddlware, checkAccountStatus, upload.array('images', 5), PostController.CreatePost);
+userRouter.post("/updatePost", AuthVerifyMiddlware, checkAccountStatus,upload.array('images', 5), PostController.CreatePost);
+userRouter.get("/deletePost", AuthVerifyMiddlware, PostController.DeletePost);
+userRouter.get("/deletePostImage", AuthVerifyMiddlware, PostController.DeletePostImage);
 
 export default userRouter;

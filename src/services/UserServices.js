@@ -192,6 +192,7 @@ export const userNidUpdateRequestService = async (req) => {
       throw new Error("File missing.");
     }
 
+    //Todo: User can select any images of NID and can delete that 
     //Upload on Cloudinary
     const nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
     const nidBackResponse = await uploadOnCloudinary(nidBack[0].path);

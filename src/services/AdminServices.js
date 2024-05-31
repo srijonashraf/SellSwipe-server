@@ -6,6 +6,8 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "./../helper/TokenGeneratorHelper.js";
+import mongoose from "mongoose";
+import PostDetailsModel from "../models/PostDetailsModel.js";
 export const adminLoginService = async (req) => {
   try {
     let reqBody = req.body;
@@ -138,7 +140,7 @@ export const userListService = async (req) => {
 
 export const reviewPostListService = async (req) => {
   try {
-    const data = await PostModel.find({ onReview: true });
+    const data = await PostModel.find({ onReview: true, isApproved: false });
     if (!data) {
       return { status: "fail", message: "Failed to load review post list" };
     }
@@ -151,7 +153,7 @@ export const reviewPostListService = async (req) => {
 
 export const approvedPostListService = async (req) => {
   try {
-    const data = await PostModel.find({ isApproved: true });
+    const data = await PostModel.find({ isApproved: true, onReview: false });
     if (!data) {
       return { status: "fail", message: "Failed to load approve post list" };
     }
@@ -318,18 +320,43 @@ export const declinePostService = async (req) => {
 };
 
 export const deletePostService = async (req) => {
+  const session = await mongoose.startSession();
   try {
     const postID = req.query.postId;
-    const post = await PostModel.findOneAndDelete({ _id: postID }).select(
-      "userID"
-    );
-    if (!post) {
-      return { status: "fail", message: "Failed to delete post" };
+    session.startTransaction();
+
+    const post = await PostModel.deleteOne({ _id: postID }).session(session);
+
+    if (post.deletedCount !== 1) {
+      await session.abortTransaction();
+      session.endSession();
+      return { status: "fail", message: "Failed to delete post by admin" };
     }
-    return { status: "success", message: "Post deleted successfully" };
+
+    const postDetails = await PostDetailsModel.deleteOne({
+      postID: postID,
+    }).session(session);
+
+    if (postDetails.deletedCount !== 1) {
+      await session.abortTransaction();
+      session.endSession();
+      return {
+        status: "fail",
+        message: "Failed to delete post details by admin",
+      };
+    }
+
+    session.commitTransaction();
+    session.endSession();
+
+    return { status: "success", message: "Post deleted by admin successfully" };
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error(error);
     return { status: "fail", message: "Something went wrong" };
+  } finally {
+    session.endSession();
   }
 };
 

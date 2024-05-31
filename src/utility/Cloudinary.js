@@ -19,6 +19,7 @@ export const uploadOnCloudinary = async (localFilePath) => {
 
     if (!response) {
       console.log("Failed to upload file");
+      fs.unlinkSync(localFilePath); // Ensure the file is deleted if the upload fails
       return null;
     }
     fs.unlinkSync(localFilePath);

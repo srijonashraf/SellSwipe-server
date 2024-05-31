@@ -28,15 +28,12 @@ adminRouter.get("/declinePost",AuthVerifyMiddlware,checkPermission("SuperAdmin",
 adminRouter.get("/deletePost",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),SendNotification,AdminController.deletePost);
 adminRouter.get("/sendFeedback",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.sendFeedback);
 
-
-
 adminRouter.get("/warnedAccountList",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.warnedAccountList);
 adminRouter.get("/restrictedAccountList",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.restrictedAccountList);
 adminRouter.get("/withdrawRestrictions",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.withdrawRestrictions);
 adminRouter.get("/warningAccount",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.warningAccount);
 adminRouter.get("/restrictAccount",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.restrictAccount);
 adminRouter.get("/reviewNidList",AuthVerifyMiddlware,checkPermission("SuperAdmin", "Admin"),AdminController.reviewNidList);
-
 
 adminRouter.post("/createBrand",AuthVerifyMiddlware,checkPermission("SuperAdmin"),BrandController.createBrand);
 adminRouter.post("/updateBrand",AuthVerifyMiddlware,checkPermission("SuperAdmin"),BrandController.updateBrand);

@@ -62,7 +62,8 @@ const PostSchema = mongoose.Schema(
       type: String,
     },
     editCount: {
-      type: String,
+      type: Number,
+      default: 0,
     },
     reportAdmin: {
       type: Boolean,

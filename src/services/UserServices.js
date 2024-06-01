@@ -3,7 +3,7 @@ import UserModel from "./../models/UserModel.js";
 import {
   destroyOnCloudinary,
   uploadOnCloudinary,
-} from "./../utility/Cloudinary.js";
+} from "./../utility/Cloudinary/Cloudinary.js";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -192,7 +192,7 @@ export const userNidUpdateRequestService = async (req) => {
       throw new Error("File missing.");
     }
 
-    //Todo: User can select any images of NID and can delete that 
+    //Todo: User can select any images of NID and can delete that
     //Upload on Cloudinary
     const nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
     const nidBackResponse = await uploadOnCloudinary(nidBack[0].path);

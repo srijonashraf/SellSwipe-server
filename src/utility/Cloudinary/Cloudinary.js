@@ -12,7 +12,6 @@ cloudinary.config({
 export const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
-
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
@@ -22,6 +21,7 @@ export const uploadOnCloudinary = async (localFilePath) => {
       fs.unlinkSync(localFilePath); // Ensure the file is deleted if the upload fails
       return null;
     }
+    
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {

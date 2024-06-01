@@ -3,137 +3,145 @@ import PostModel from "../models/PostModel.js";
 import {
   destroyOnCloudinary,
   uploadOnCloudinary,
-} from "../utility/Cloudinary.js";
+} from "../utility/Cloudinary/Cloudinary.js";
 import PostDetailsModel from "./../models/PostDetailsModel.js";
 import mapData from "../utility/CreatePost/MapData.js";
-import calculateDiscountPercentage from "../utility/CreatePost/DiscountPercentage.js";
-import calculateDiscountPrice from "../utility/CreatePost/DiscountPrice.js";
 
 const ObjectID = mongoose.Types.ObjectId;
 
 export const createPostService = async (req) => {
+  try {
+    let reqBody = req.body;
+    reqBody.userID = new ObjectID(req.headers.id);
+    const { PostData, PostDetailsData } = await mapData(reqBody);
+
+    if (!req.files || req.files.length !== 5) {
+      return {
+        status: "fail",
+        message: "Exactly five files must be uploaded",
+      };
+    }
+
+    const uploadPromises = req.files.map((file) =>
+      uploadOnCloudinary(file.path)
+    );
+
+    const [uploadResults] = await Promise.all([Promise.all(uploadPromises)]);
+
+    // Process Cloudinary upload results
+    const cloudinaryUrlStore = uploadResults.map((uploadResult) => ({
+      url: uploadResult.secure_url,
+      pid: uploadResult.public_id,
+    }));
+
+    PostData.mainImg = {
+      url: cloudinaryUrlStore[0].url,
+      pid: cloudinaryUrlStore[0].pid,
+    };
+
+    for (let i = 1; i < cloudinaryUrlStore.length; i++) {
+      PostDetailsData[`img${i}`] = {
+        url: cloudinaryUrlStore[i].url,
+        pid: cloudinaryUrlStore[i].pid,
+      };
+    }
+
+    // Create post data
+    const createPostData = await PostModel.create(PostData);
+    PostDetailsData.postID = createPostData._id;
+    const createPostDetailsData = await PostDetailsModel.create(
+      PostDetailsData
+    );
+
+    return {
+      status: "success",
+      Post: createPostData,
+      PostDetails: createPostDetailsData,
+    };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", data: error.message };
+  }
+};
+
+export const updatePostService = async (req) => {
   try {
     const postID = new ObjectID(req.query.postId);
     let reqBody = req.body;
     reqBody.userID = new ObjectID(req.headers.id);
     const { PostData, PostDetailsData } = await mapData(reqBody);
 
-    // Calculate discount percentage if discountPrice is provided
-    if (PostData.discountPrice) {
-      PostData.discount = true;
-      PostData.discountPercentage = await calculateDiscountPercentage(
-        PostData.price,
-        PostData.discountPrice
-      );
-    }
-
-    // Calculate discountPrice if discountPercentage is provided
-    if (PostData.discountPercentage) {
-      PostData.discount = true;
-      PostData.discountPrice = await calculateDiscountPrice(
-        PostData.price,
-        PostData.discountPercentage
-      );
-    }
-
-    // Upload images to Cloudinary and handle previous images
-    if (req.files && req.files.length > 0) {
-      const cloudinaryUrls = await uploadPostImagesService(req, postID);
-      PostData.mainImg = {
-        url: cloudinaryUrls[0].url,
-        pid: cloudinaryUrls[0].pid,
+    if (!req.files || req.files.length !== 5) {
+      return {
+        status: "fail",
+        message: "Exactly five files must be uploaded",
       };
-
-      for (let i = 1; i <= 5 && i < cloudinaryUrls.length; i++) {
-        PostDetailsData[`img${i}`] = {
-          url: cloudinaryUrls[i].url,
-          pid: cloudinaryUrls[i].pid,
-        };
-      }
     }
 
-    //Increment the editCount when updating post
-    const updateQuery = req.query.postId
-      ? {
-          $set: PostData,
-          $inc: { editCount: 1 },
-          isApproved: false,
-          onReview: true,
-        }
-      : {
-          $set: PostData,
-          $setOnInsert: {
-            isApproved: false,
-            onReview: true,
-            editCount: 0,
-          },
-        };
+    const existingDetailsImage = await PostDetailsModel.findOne({
+      postID: postID,
+    }).exec();
+
+    const existingMainImage = await PostModel.findOne({
+      _id: postID,
+    }).exec();
+
+    const existingDetailsImageObj = existingDetailsImage.toObject();
+    const destroyPromises = Object.keys(existingDetailsImageObj)
+      .slice(0, 4)
+      .map((key) => destroyOnCloudinary(existingDetailsImageObj[key].pid));
+
+    const uploadPromises = req.files.map((file) =>
+      uploadOnCloudinary(file.path)
+    );
+
+    const [destroyResults, uploadResults, destroySingle] = await Promise.all([
+      Promise.all(destroyPromises),
+      Promise.all(uploadPromises),
+      destroyOnCloudinary(existingMainImage.mainImg.pid),
+    ]);
+
+    // Process Cloudinary upload results
+    const cloudinaryUrlStore = uploadResults.map((uploadResult) => ({
+      url: uploadResult.secure_url,
+      pid: uploadResult.public_id,
+    }));
+
+    // Update PostData and PostDetailsData with new image URLs
+    PostData.mainImg = {
+      url: cloudinaryUrlStore[0].url,
+      pid: cloudinaryUrlStore[0].pid,
+    };
+
+    for (let i = 1; i < cloudinaryUrlStore.length; i++) {
+      PostDetailsData[`img${i}`] = {
+        url: cloudinaryUrlStore[i].url,
+        pid: cloudinaryUrlStore[i].pid,
+      };
+    }
 
     // Create post data
-    const createdPostData = await PostModel.findOneAndUpdate(
+    const updatePostData = await PostModel.updateOne(
       { _id: postID },
-      updateQuery,
-      { upsert: true, new: true }
+      { $set: PostData },
+      { new: true }
     );
-
-    // Create post details data
-    PostDetailsData.postID = createdPostData._id;
-    const createdPostDetailsData = await PostDetailsModel.findOneAndUpdate(
+    PostDetailsData.postID = updatePostData._id;
+    const updatePostDetails = await PostDetailsModel.updateOne(
       { postID: postID },
       { $set: PostDetailsData },
-      { upsert: true, new: true }
+      { new: true }
     );
 
-    if (createdPostData && createdPostDetailsData) {
-      return {
-        status: "success",
-        post: createdPostData,
-        postDetails: createdPostDetailsData,
-      };
-    } else {
-      return { status: "fail", message: "Failed to post your ad" };
-    }
+    return {
+      status: "success",
+      message: "Post updated successfully",
+      Post: updatePostData,
+      PostDetails: updatePostDetails,
+    };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", data: error };
-  }
-};
-
-export const uploadPostImagesService = async (req, postID) => {
-  try {
-    //If file not found in req then return fail
-    if (!req.files || req.files.length === 0) {
-      return { success: "fail", message: "You must select at least one image" };
-    }
-
-    // Upload images to Cloudinary
-    const filePaths = req.files.map((file) => file.path);
-
-    const cloudinaryUrls = [];
-    for (const filePath of filePaths) {
-      const cloudinaryResponse = await uploadOnCloudinary(filePath);
-      cloudinaryUrls.push({
-        url: cloudinaryResponse.secure_url,
-        pid: cloudinaryResponse.public_id,
-      }); //Pass as an object
-    }
-
-    //Fetch existing image to delete
-    const existingImages = await PostDetailsModel.findOne({ postID }).exec();
-    const existingMainImages = await PostModel.findOne({ _id: postID }).exec();
-
-    if (existingImages && existingMainImages) {
-      await destroyOnCloudinary(existingMainImages.mainImg.pid);
-      for (let i = 1; i <= 5; i++)
-        if (existingImages[`img${i}`]) {
-          await destroyOnCloudinary(existingImages[`img${i}`].pid);
-        }
-    }
-
-    return cloudinaryUrls;
-  } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong" };
+    console.error(error);
+    return { status: "fail", data: error.message };
   }
 };
 

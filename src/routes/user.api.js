@@ -8,7 +8,7 @@ import { checkEmailVerification } from "../middlewares/EmailVerficationCheckMidd
 import { checkNidVerification } from "./../middlewares/NidVerificationCheckMiddleware.js";
 import { checkAccountStatus } from "../middlewares/AccountStatusCheckMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
-import { postSchemaCreate } from "./../request/post.schema.js";
+import { postSchemaCreate, postSchemaUpdate } from "./../request/post.schema.js";
 import { userSchemaCreate } from "../request/user.schema.js";
 
 const userRouter = express.Router();
@@ -17,9 +17,9 @@ userRouter.post("/registration", UserController.userRegistration);
 
 userRouter.post(
   "/login",
+  validateRequest({ schema: userSchemaCreate, isParam: false, isQuery: false }),
   checkLoginAttempts,
   checkEmailVerification,
-  validateRequest({ schema: userSchemaCreate, isParam: false, isQuery: false }),
   UserController.userLogin
 );
 
@@ -84,8 +84,8 @@ userRouter.post(
 userRouter.post(
   "/updatePost",
   AuthVerifyMiddlware,
-  validateRequest({ isQuery: false }),
   upload.array("images", 5),
+  validateRequest({ schema: postSchemaUpdate, isQuery: false, isParam: false }),
   PostController.UpdatePost
 );
 

@@ -21,9 +21,6 @@ const PostSchema = mongoose.Schema(
     discountPrice: {
       type: Number,
     },
-    discountPercentage: {
-      type: Number,
-    },
     mainImg: {
       url: String,
       pid: String,

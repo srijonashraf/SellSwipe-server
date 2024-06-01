@@ -1,0 +1,1 @@
+This folder contains schema definitions for the models, ensuring their validation and integrity before use. The validation is performed using Joi.

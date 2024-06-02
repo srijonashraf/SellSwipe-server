@@ -53,6 +53,7 @@ const UserSchema = mongoose.Schema(
     },
     nidVerified: {
       type: Boolean,
+      default: false,
     },
     emailVerified: {
       type: Boolean,

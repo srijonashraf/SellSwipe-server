@@ -3,13 +3,14 @@ import * as PostController from "../controllers/PostController.js";
 import * as UserController from "../controllers/UserController.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
 import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
-import { checkLoginAttempts } from "./../middlewares/LoginAttemptWatcherMiddleware.js";
-import { checkEmailVerification } from "../middlewares/EmailVerficationCheckMiddleware.js";
-import { checkNidVerification } from "./../middlewares/NidVerificationCheckMiddleware.js";
-import { checkAccountStatus } from "../middlewares/AccountStatusCheckMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
-import { postSchemaCreate, postSchemaUpdate } from "./../request/post.schema.js";
+import {
+  postSchemaCreate,
+  postSchemaUpdate,
+} from "./../request/post.schema.js";
 import { userSchemaCreate } from "../request/user.schema.js";
+import { preLoginValidation } from "../middlewares/PreLoginValidationMiddleware.js";
+import { PrePostValidation } from "../middlewares/PrePostValidationMiddleware.js";
 
 const userRouter = express.Router();
 
@@ -17,9 +18,8 @@ userRouter.post("/registration", UserController.userRegistration);
 
 userRouter.post(
   "/login",
+  preLoginValidation,
   validateRequest({ schema: userSchemaCreate, isParam: false, isQuery: false }),
-  checkLoginAttempts,
-  checkEmailVerification,
   UserController.userLogin
 );
 
@@ -55,7 +55,6 @@ userRouter.post(
 userRouter.get(
   "/profileDetails",
   AuthVerifyMiddlware,
-  checkAccountStatus,
   UserController.userProfileDetails
 );
 
@@ -71,11 +70,10 @@ userRouter.get(
   UserController.userLogoutFromSession
 );
 
-//Temporariry giving access without checkNidVerficaion middleware for test
 userRouter.post(
   "/createPost",
   AuthVerifyMiddlware,
-  checkAccountStatus,
+  PrePostValidation,
   upload.array("images", 5),
   validateRequest({ schema: postSchemaCreate, isQuery: false, isParam: false }),
   PostController.CreatePost
@@ -97,6 +95,7 @@ userRouter.get(
   PostController.DeletePostImage
 );
 
+//Testing purpose only
 userRouter.get(
   "/testValidator",
   validateRequest({ schema: postSchemaCreate, isQuery: false, isParam: false })

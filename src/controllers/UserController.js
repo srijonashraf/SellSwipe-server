@@ -48,7 +48,6 @@ export const userProfileDetails = async (req, res) => {
   res.status(200).json(result);
 };
 
-
 export const userEmailVerify = async (req, res) => {
   const result = await userEmailVerifyService(req);
   res.status(200).json(result);

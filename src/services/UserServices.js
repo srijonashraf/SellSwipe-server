@@ -12,6 +12,7 @@ import SessionDetailsModel from "../models/SessionDetailsModel.js";
 import OtpModel from "./../models/OtpModel.js";
 import EmailSend from "../helper/EmailHelper.js";
 import bcrypt from "bcrypt";
+
 const ObjectID = mongoose.Types.ObjectId;
 
 export const userRegistrationService = async (req) => {
@@ -60,36 +61,29 @@ export const userRegistrationService = async (req) => {
   }
 };
 
-export const userLoginService = async (req) => {
+export const userLoginService = async (req, res, next) => {
   try {
     const reqBody = req.body;
     const user = await UserModel.findOne({
       email: reqBody.email,
     }).exec();
-    if (!user)
-      return {
-        status: "fail",
-        message: "No account associated with this email",
-      };
 
-    if (user.accountStatus === "Restricted") {
-      return {
-        status: "fail",
-        message: "Login Failed, Your account is Restricted",
-      };
-    }
     const isCorrectPassword = await user.isPasswordCorrect(reqBody.password);
     if (!isCorrectPassword) {
       user.loginAttempt += 1;
       await user.save();
       return {
         status: "fail",
+        code:1,
         message: "Wrong credential",
       };
     }
     const packet = { _id: user._id, role: user.role };
-    const accessTokenResponse = generateAccessToken(packet);
-    const refreshTokenResponse = generateRefreshToken(packet);
+
+    const [accessTokenResponse, refreshTokenResponse] = await Promise.all([
+      generateAccessToken(packet),
+      generateRefreshToken(packet),
+    ]);
 
     // //!!Free limit 45 Fire in a minute, if anything goes wrong check here.
     // Fetch location details based on IP address

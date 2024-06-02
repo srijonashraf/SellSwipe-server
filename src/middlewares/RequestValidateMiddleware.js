@@ -17,7 +17,7 @@ export const validateRequest = ({
     // Sanitize
     for (let key in input) {
       if (typeof input[key] === "string") {
-        input[key] = validator.escape(input[key].toString());
+        input[key] = validator.escape(input[key]);
       }
     }
 

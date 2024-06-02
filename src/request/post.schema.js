@@ -51,7 +51,6 @@ export const postSchemaCreate = Joi.object().keys({
 });
 
 export const postSchemaUpdate = Joi.object().keys({
-  userID: Joi.string().custom(objectIdValidator).required(),
   title: Joi.string().required(),
   price: Joi.number().required(),
   discount: Joi.boolean(),

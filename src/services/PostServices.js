@@ -120,10 +120,17 @@ export const updatePostService = async (req) => {
       };
     }
 
+    //Edited post will need further admin approval this will solve scam issue after posting
+    PostData.onReview = true;
+    PostData.isApproved = false;
+
     // Create post data
     const updatePostData = await PostModel.updateOne(
       { _id: postID },
-      { $set: PostData },
+      {
+        $set: PostData,
+        $inc: { editCount: 1 },
+      },
       { new: true }
     );
     PostDetailsData.postID = updatePostData._id;

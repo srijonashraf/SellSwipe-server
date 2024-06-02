@@ -11,6 +11,7 @@ import { trackRefresh } from "./src/middlewares/LastRefreshMiddleware.js";
 import adminRouter from "./src/routes/admin.api.js";
 import userRouter from "./src/routes/user.api.js";
 import router from "./src/routes/public.api.js";
+import { errorHandler } from "./src/middlewares/ErrorHandlerMiddleware.js";
 
 dotenv.config();
 const app = new express();
@@ -50,5 +51,7 @@ app.get("/", function (req, res) {
 app.use("/user/api/v1/", userRouter); //User Router
 app.use("/admin/api/v1/", adminRouter); //Admin Router
 app.use("/api/v1/", router); //Public Router
+
+app.use(errorHandler);
 
 export default app;

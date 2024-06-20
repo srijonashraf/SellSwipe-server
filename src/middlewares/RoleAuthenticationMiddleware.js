@@ -1,6 +1,6 @@
 import AdminModel from "../models/AdminModel.js";
 
-export function checkPermission(...roles) {
+export function roleAuthentication(...roles) {
   return function (req, res, next) {
     const role = req.headers.role;
     const id = req.headers.id;

@@ -1,11 +1,11 @@
 import AdminModel from "../models/AdminModel.js";
 
-export function checkPermission(...permission) {
+export function checkPermission(...roles) {
   return function (req, res, next) {
     const role = req.headers.role;
     const id = req.headers.id;
 
-    if (permission.includes(role)) {
+    if (roles.includes(role)) {
       AdminModel.findOne({ _id: id, role: role })
         .then((admin) => {
           if (admin) {

@@ -11,6 +11,7 @@ import { trackRefresh } from "./src/middlewares/LastRefreshMiddleware.js";
 import adminRouter from "./src/routes/admin.api.js";
 import protectedRouter from "./src/routes/protected.api.js";
 import publicRouter from "./src/routes/public.api.js";
+import useragent from "express-useragent";
 
 dotenv.config();
 const app = new express();
@@ -21,6 +22,7 @@ app.use(cookieParser());
 app.use(trackRefresh);
 app.use(express.json({ limit: process.env.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ limit: process.env.MAX_URL_ENCODED_SIZE }));
+app.use(useragent.express());
 
 app.use(
   rateLimit({

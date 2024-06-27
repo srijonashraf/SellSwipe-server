@@ -363,8 +363,12 @@ export const sendVerificationEmailService = async (req) => {
       return { status: "fail", message: "No registered user found" };
     }
 
-    //These links will be followed by frontend
+    /*This method will only work if the frontend and backend are in same domain (combined architecture)
+    else we have to manually set the url of the frontend to follow from backend.
+    e.g: sellswipe.com/emailVerificationByLink?userId={}
+    */
 
+    //This link will be followed by frontend
     const link = `${baseUrl(req)}/emailVerificationByLink?userId=${
       user._id
     }&token=${token}`;
@@ -433,7 +437,7 @@ export const sendResetPasswordEmailService = async (req) => {
       return { status: "fail", message: "No registered user found" };
     }
 
-    //These links will be followed by frontend
+    //This link will be followed by frontend
 
     const link = `${baseUrl(req)}/resetPasswordByLink?userId=${
       user._id
@@ -610,12 +614,14 @@ export const resetPasswordByLinkService = async (req) => {
 
     const location = await fetchLocation(req);
 
+    const userAgent = req.useragent;
+
     const emailTemplateResponse = afterResetPasswordTemplate({
       name: user.name,
       ip: req.ip,
       location: location,
-      device: req.get("User-Agent"),
-      time: new Date(),
+      device: userAgent.platform,
+      time: new Date().toLocaleString(),
     });
 
     await EmailSend(
@@ -686,6 +692,18 @@ export const resetPasswordByOtpService = async (req, res) => {
     }
 
     await OtpModel.deleteMany({ email: email });
+
+    const location = await fetchLocation(req);
+
+    const userAgent = req.useragent;
+
+    const emailTemplateResponse = afterResetPasswordTemplate({
+      name: user.name,
+      ip: req.ip,
+      location: location,
+      device: userAgent.platform,
+      time: new Date().toLocaleString(),
+    });
 
     return { status: "success", message: "Password reset successfully" };
   } catch (error) {

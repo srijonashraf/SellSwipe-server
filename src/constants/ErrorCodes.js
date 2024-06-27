@@ -1,4 +1,3 @@
-/* Adding manual error code in error response for now, next will be imeplemented the middleware to auto catch the error*/
 export const errorCodes = {
   AUTHENTICATION_ERROR: {
     code: 1,
@@ -30,10 +29,10 @@ export const errorCodes = {
   },
   ACCOUNT_IS_NOT_VAlID: {
     code: 8,
-    message: "You can not post. Your account is not valid.",
+    message: "You can not post, Your account is not valid.",
   },
   NID_NOT_VERIFIED: {
     code: 9,
-    message: "You can not post. Your NID is not verified.",
+    message: "You can not post, Your NID is not verified.",
   },
 };

@@ -621,7 +621,7 @@ export const resetPasswordByLinkService = async (req) => {
       ip: req.ip,
       location: location,
       device: userAgent.platform,
-      time: new Date().toLocaleString(),
+      time: new Date().toLocaleString("en-NZ", { timeZone: "Asia/Dhaka" }),
     });
 
     await EmailSend(
@@ -702,7 +702,7 @@ export const resetPasswordByOtpService = async (req, res) => {
       ip: req.ip,
       location: location,
       device: userAgent.platform,
-      time: new Date().toLocaleString(),
+      time: new Date().toLocaleString("en-NZ", { timeZone: "Asia/Dhaka" }),
     });
 
     return { status: "success", message: "Password reset successfully" };

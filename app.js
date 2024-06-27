@@ -45,10 +45,30 @@ mongoose
     console.log(err);
   });
 
+// app.get('/', function (req, res) {
+//   const userAgentResponse = req.useragent;
+//   res.send(JSON.stringify(userAgentResponse, null, 2)); // Pretty print JSON
+// });
+
 app.get("/", function (req, res) {
   res.send(
-    '<h1 style="display: flex; align-items: center; justify-content: center;">Hello from SellSwipe</h1>'
+    '<h1 style="display: flex; align-items: center; justify-content: center; margin-top:50px">Hello from SellSwipe</h1>'
   );
+});
+
+//Checking the client ip address
+app.get("/test", function (req, res, next) {
+  const userAgentResponse = req.useragent;
+  const reqIp = req.ip;
+  const reqHeader = req.headers["x-forwarded-for"];
+  const reqConnection = req.connection.remoteAddress;
+  console.log(req)
+  console.log(reqIp, reqHeader, reqConnection);
+  res.json({
+    reqIp: reqIp,
+    reqHeader: reqHeader,
+    reqConnection: reqConnection,
+  });
 });
 
 app.use("/api/v1/", publicRouter); //Public Router

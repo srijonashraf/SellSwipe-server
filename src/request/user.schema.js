@@ -9,78 +9,85 @@ const objectIdValidator = (value, helpers) => {
   return value;
 };
 
-export const userSchemaCreate = Joi.object().keys({
+// Joi schema for creating an user
+export const userSchemaCreate = Joi.object({
   email: Joi.string().email().lowercase().required(),
-  name: Joi.string().optional(),
-  role: Joi.string().valid("User", "Admin").default("User"),
+  name: Joi.string().required(),
+  role: Joi.string().valid("User").default("User"),
   avatar: Joi.object({
-    url: Joi.string().uri().optional().allow(""),
-    pid: Joi.string().optional().allow(""),
-  }).optional(),
+    url: Joi.string().uri().allow(""),
+    pid: Joi.string().allow(""),
+  }),
   password: Joi.string().required().messages({
     "string.empty": "Please enter a Password",
   }),
-  nidNumber: Joi.number().optional(),
+  nidNumber: Joi.number(),
   nidFront: Joi.object({
-    url: Joi.string().uri().optional(),
-    pid: Joi.string().optional(),
-  }).optional(),
+    url: Joi.string().uri(),
+    pid: Joi.string(),
+  }),
   nidBack: Joi.object({
-    url: Joi.string().uri().optional(),
-    pid: Joi.string().optional(),
-  }).optional(),
+    url: Joi.string().uri(),
+    pid: Joi.string(),
+  }),
   nidSubmitted: Joi.boolean().default(false),
-  phone: Joi.string().optional(),
-  address: Joi.string().optional(),
-  nidVerified: Joi.boolean().optional(),
+  phone: Joi.string(),
+  address: Joi.string(),
+  nidVerified: Joi.boolean(),
   emailVerified: Joi.boolean().default(false),
-  phoneVerified: Joi.boolean().optional(),
+  phoneVerified: Joi.boolean(),
   accountStatus: Joi.string()
-    .valid("Validated", "Warning", "Restricted")
-    .default("Validated"),
-  warningCount: Joi.number().optional(),
-  lastLogin: Joi.string().optional(),
-  lastRefresh: Joi.string().optional(),
-  sessionId: Joi.array()
-    .items(Joi.string().custom(objectIdValidator))
-    .optional(),
+    .valid("Validate", "Warning", "Restricted")
+    .default("Validate"),
+  warningCount: Joi.number(),
+  lastLogin: Joi.string(),
+  lastRefresh: Joi.string(),
+  sessionId: Joi.array().items(Joi.string().custom(objectIdValidator)),
   loginAttempt: Joi.number().default(0),
-  limitedLogin: Joi.string().optional(),
+  limitedLogin: Joi.string(),
 });
 
-export const userSchemaUpdate = Joi.object().keys({
+// Joi schema for updating an user
+export const userSchemaUpdate = Joi.object({
   email: Joi.string().email().lowercase(),
-  name: Joi.string().optional(),
-  role: Joi.string().valid("User", "Admin").default("User"),
+  name: Joi.string(),
+  role: Joi.string().valid("User"),
   avatar: Joi.object({
-    url: Joi.string().uri().optional().allow(""),
-    pid: Joi.string().optional().allow(""),
-  }).optional(),
+    url: Joi.string().uri().allow(""),
+    pid: Joi.string().allow(""),
+  }),
   password: Joi.string(),
-  nidNumber: Joi.number().optional(),
+  nidNumber: Joi.number(),
   nidFront: Joi.object({
-    url: Joi.string().uri().optional(),
-    pid: Joi.string().optional(),
-  }).optional(),
+    url: Joi.string().uri(),
+    pid: Joi.string(),
+  }),
   nidBack: Joi.object({
-    url: Joi.string().uri().optional(),
-    pid: Joi.string().optional(),
-  }).optional(),
+    url: Joi.string().uri(),
+    pid: Joi.string(),
+  }),
   nidSubmitted: Joi.boolean().default(false),
-  phone: Joi.string().optional(),
-  address: Joi.string().optional(),
-  nidVerified: Joi.boolean().optional(),
+  phone: Joi.string(),
+  address: Joi.string(),
+  nidVerified: Joi.boolean(),
   emailVerified: Joi.boolean().default(false),
-  phoneVerified: Joi.boolean().optional(),
-  accountStatus: Joi.string()
-    .valid("Validated", "Warning", "Restricted")
-    .default("Validated"),
-  warningCount: Joi.number().optional(),
-  lastLogin: Joi.string().optional(),
-  lastRefresh: Joi.string().optional(),
-  sessionId: Joi.array()
-    .items(Joi.string().custom(objectIdValidator))
-    .optional(),
+  phoneVerified: Joi.boolean(),
+  accountStatus: Joi.string().valid("Validate", "Warning", "Restricted"),
+  warningCount: Joi.number(),
+  lastLogin: Joi.string(),
+  lastRefresh: Joi.string(),
+  sessionId: Joi.array().items(Joi.string().custom(objectIdValidator)),
   loginAttempt: Joi.number().default(0),
-  limitedLogin: Joi.string().optional(),
+  limitedLogin: Joi.string(),
+});
+
+export const userEmailSchema = Joi.object().keys({
+  email: Joi.string().email().lowercase().required(),
+});
+
+export const userCredentialSchema = Joi.object().keys({
+  email: Joi.string().email().lowercase().required(),
+  password: Joi.string().required().messages({
+    "string.empty": "Please enter a Password",
+  }),
 });

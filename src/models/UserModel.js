@@ -42,7 +42,7 @@ const UserSchema = mongoose.Schema(
       pid: String,
     },
     nidSubmitted: {
-      type: Boolean, // If NID is submitted then the field for nidFront and nidBack will be disabled
+      type: Boolean,
       default: false,
     },
     phone: {
@@ -64,7 +64,7 @@ const UserSchema = mongoose.Schema(
     },
     accountStatus: {
       type: String,
-      default: "Validate", //Validated, Warning, Restricted
+      default: "Validate", //Validate, Warning, Restricted
     },
     warningCount: {
       type: Number,
@@ -94,8 +94,9 @@ const UserSchema = mongoose.Schema(
 );
 
 UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
   next();
 });
 

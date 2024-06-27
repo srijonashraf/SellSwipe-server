@@ -9,9 +9,8 @@ import helmet from "helmet";
 import hpp from "hpp";
 import { trackRefresh } from "./src/middlewares/LastRefreshMiddleware.js";
 import adminRouter from "./src/routes/admin.api.js";
-import userRouter from "./src/routes/user.api.js";
-import router from "./src/routes/public.api.js";
-import { errorHandler } from "./src/middlewares/ErrorHandlerMiddleware.js";
+import protectedRouter from "./src/routes/protected.api.js";
+import publicRouter from "./src/routes/public.api.js";
 
 dotenv.config();
 const app = new express();
@@ -48,10 +47,8 @@ app.get("/", function (req, res) {
   res.send("Hello from SellSwipe");
 });
 
-app.use("/user/api/v1/", userRouter); //User Router
+app.use("/api/v1/", publicRouter); //Public Router
+app.use("/user/api/v1/", protectedRouter); // Protected Router
 app.use("/admin/api/v1/", adminRouter); //Admin Router
-app.use("/api/v1/", router); //Public Router
-
-app.use(errorHandler);
 
 export default app;

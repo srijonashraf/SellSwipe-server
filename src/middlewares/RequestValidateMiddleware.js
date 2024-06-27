@@ -1,5 +1,14 @@
 import validator from "validator";
 
+export const inputSanitizer = (input) => {
+  // Sanitize
+  for (let key in input) {
+    if (typeof input[key] === "string") {
+      input[key] = validator.escape(input[key]);
+    }
+  }
+};
+
 export const validateRequest = ({
   schema,
   isParam = false,
@@ -14,20 +23,24 @@ export const validateRequest = ({
 
     const input = isParam ? req.params : isQuery ? req.query : req.body;
 
-    // Sanitize
-    for (let key in input) {
-      if (typeof input[key] === "string") {
-        input[key] = validator.escape(input[key]);
-      }
+    if (Object.keys(input).length === 0) {
+      throw new Error("Input object is empty!");
     }
 
-    const validationResult = schema.validate(input, { abortEarly: false }); // Joi Validator
+    inputSanitizer(input);
+
+    // console.log(input); //To debug sanitize inputs
+
+    const validationResult = schema.validate(input, { abortEarly: false }); // Joi Validator (This will validate the request schema)
 
     if (validationResult.error) {
-      return res
-        .status(400)
-        .json({ status: "fail", errors: validationResult.error.details });
+      return res.status(400).json({
+        status: "fail",
+        errors: validationResult.error.details,
+      });
     }
+
+    // console.log(validationResult); //To debug validationResult
 
     if (isParam) {
       req.params = validationResult.value;

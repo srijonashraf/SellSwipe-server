@@ -1,4 +1,4 @@
-import { errorCodes } from "../helper/ErrorCodes.js";
+import { errorCodes } from "../constants/ErrorCodes.js";
 
 export const errorHandler = async (err, req, res, next) => {
   const statusCode = err.statusCode || errorCodes.INTERNAL_SERVER_ERROR.code;

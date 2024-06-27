@@ -35,15 +35,16 @@ export default async (req, res, next) => {
             "_id name email role sessionId"
           );
           if (!response) {
-            return res.status(401).json({ status: "Invalid Access Token" });
+            return res.status(401).json({ status: "fail", message:"Invalid Access Token" });
           }
 
-          //Check if the accessToken and sessionId match with the DB stored sessiondetails's accessToken and the user's sessionId
+          /*Check if the accessToken matches with sessionDetails' accessToken
+          and sessionId match with the user's sessionId in database*/
 
           const extractSessionToken = await SessionDetailsModel.findOne({
             accessToken: token,
             refreshToken: refreshToken,
-            _id: { $in: response.sessionId }, //Check if the session details id is in the user's sessionId array or not
+            _id: { $in: response.sessionId }, //Check if the session details id exist in the user's sessionId array
           }).select("_id");
 
           if (!extractSessionToken) {
@@ -68,15 +69,16 @@ export default async (req, res, next) => {
             "_id name email role sessionId"
           );
           if (!response) {
-            return res.status(401).json({ status: "Invalid Access Token" });
+            return res.status(401).json({ status: "fail", message:"Invalid Access Token" });
           }
 
-          //Check if the accessToken and sessionId match with the DB stored sessiondetails's accessToken and the user's sessionId
+          /*Check if the accessToken matches with sessionDetails' accessToken
+            and sessionId match with the admin's sessionId in database*/
 
           const extractSessionToken = await SessionDetailsModel.findOne({
             accessToken: token,
             refreshToken: refreshToken,
-            _id: { $in: response.sessionId }, //Check if the session details id is in the user's sessionId array or not
+            _id: { $in: response.sessionId }, //Check if the session details id exist in the admin's sessionId array
           }).select("_id");
 
           if (!extractSessionToken) {

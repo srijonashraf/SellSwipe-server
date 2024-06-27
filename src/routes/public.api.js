@@ -1,21 +1,65 @@
 import express from "express";
-import { listBrand } from "../controllers/BrandController.js";
-import { listCategory } from "../controllers/CategoryContoller.js";
-import { listModel } from "../controllers/ModelController.js";
+import * as BrandController from "../controllers/BrandController.js";
+import * as CategoryContoller from "../controllers/CategoryContoller.js";
+import * as ModelController from "../controllers/ModelController.js";
+import * as LocationController from "../controllers/LocationController.js";
+import * as PostController from "../controllers/PostController.js";
+import * as UserController from "../controllers/UserController.js";
+import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
-  listArea,
-  listDistrict,
-  listDivision,
-} from "../controllers/LocationController.js";
-import { PostList } from "../controllers/PostController.js";
-const router = express.Router();
+  userCredentialSchema,
+  userSchemaCreate,
+} from "./../request/user.schema.js";
+import { otpSchemaUpdate } from "../request/otp.schema.js";
 
-router.get("/listBrand", listBrand);
-router.get("/listCategory", listCategory);
-router.get("/listModel", listModel);
-router.get("/listDivision", listDivision);
-router.get("/listDistrict", listDistrict);
-router.get("/listArea", listArea);
-router.get("/postList", PostList);
+const publicRouter = express.Router();
 
-export default router;
+publicRouter.get("/listBrand", BrandController.listBrand);
+publicRouter.get("/listCategory", CategoryContoller.listCategory);
+publicRouter.get("/listModel", ModelController.listModel);
+publicRouter.get("/listDivision", LocationController.listDivision);
+publicRouter.get("/listDistrict", LocationController.listDistrict);
+publicRouter.get("/listArea", LocationController.listArea);
+publicRouter.get("/postList", PostController.PostList);
+
+publicRouter.post(
+  "/registration",
+  validateRequest({ schema: userSchemaCreate, isParam: false, isQuery: false }),
+  UserController.userRegistration
+);
+
+publicRouter.post(
+  "/login",
+  validateRequest({
+    schema: userCredentialSchema,
+    isParam: false,
+    isQuery: false,
+  }),
+  UserController.userLogin
+);
+
+publicRouter.get(
+  "/sendVerificationEmail",
+  UserController.sendVerificationEmail
+);
+
+publicRouter.get(
+  "/sendResetPasswordEmail",
+  UserController.sendResetPasswordEmail
+);
+
+publicRouter.get(
+  "/emailVerificationByLink",
+  UserController.emailVerificationByLink
+);
+
+publicRouter.get(
+  "/emailVerificationByOtp",
+  validateRequest({ schema: otpSchemaUpdate, isQuery: true, isParam: false }),
+  UserController.emailVerificationByOtp
+);
+
+publicRouter.post("/resetPasswordByLink", UserController.resetPasswordByLink);
+publicRouter.post("/resetPasswordByOtp", UserController.resetPasswordByOtp);
+
+export default publicRouter;

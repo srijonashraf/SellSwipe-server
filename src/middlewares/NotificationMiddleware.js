@@ -1,14 +1,6 @@
 import PostModel from "../models/PostModel.js";
 import NotificationModel from "./../models/NotificationModel.js";
-
-// Define a configuration object to map paths to messages
-const messageConfig = {
-  "/deletePost":
-    "Your post goes against our community standards. We have removed it.",
-  "/blockUser":
-    "Your account has been temporarily blocked for sharing explicit content.",
-  // Add more paths and messages as needed
-};
+import { messageConfig } from "../constants/NotificationMessages.js";
 
 export const SendNotification = async (req, res, next) => {
   try {

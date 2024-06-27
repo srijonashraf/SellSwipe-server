@@ -12,24 +12,30 @@ const AdminSchema = mongoose.Schema(
     },
     password: {
       type: String,
+      required: true,
     },
     role: {
       type: String, //Admin/SuperAdmin
     },
     ref: {
-      type: Object, //Appointed By
+      name: {
+        type: String,
+      },
+      id: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
     },
     approvedPosts: {
-      type: [String],
+      type: [mongoose.Schema.Types.ObjectId],
     },
     declinedPosts: {
-      type: [String],
+      type: [mongoose.Schema.Types.ObjectId],
     },
     warnedAccounts: {
-      type: [String],
+      type: [mongoose.Schema.Types.ObjectId],
     },
     restrictedAccounts: {
-      type: [String],
+      type: [mongoose.Schema.Types.ObjectId],
     },
     sessionId: {
       type: [mongoose.Schema.Types.ObjectId],

@@ -10,7 +10,17 @@ const OtpSchema = mongoose.Schema(
       lowercase: true,
     },
     otp: {
+      type: Number,
+    },
+    token: {
       type: String,
+    },
+    initiated: {
+      type: Number,
+      default: Date.now,
+    },
+    expiresAt: {
+      type: Number,
     },
     expired: {
       type: Boolean,
@@ -23,6 +33,6 @@ const OtpSchema = mongoose.Schema(
   }
 );
 
-const OtpModel = mongoose.model("opts", OtpSchema);
+const OtpModel = mongoose.model("otps", OtpSchema);
 
 export default OtpModel;

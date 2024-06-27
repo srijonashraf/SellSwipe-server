@@ -9,8 +9,7 @@ const objectIdValidator = (value, helpers) => {
   return value;
 };
 
-const model = "Post";
-
+// Joi schema for creating a post
 export const postSchemaCreate = Joi.object().keys({
   title: Joi.string().required(),
   price: Joi.number().required(),
@@ -37,7 +36,7 @@ export const postSchemaCreate = Joi.object().keys({
   districtID: Joi.string().custom(objectIdValidator).required(),
   areaID: Joi.string().custom(objectIdValidator).required(),
   address: Joi.string().required(),
-  feedback: Joi.string().optional(),
+  feedback: Joi.string(),
   description: Joi.string(),
   size: Joi.array().required(),
   color: Joi.array().required(),
@@ -50,6 +49,7 @@ export const postSchemaCreate = Joi.object().keys({
   keyword: Joi.array().required(),
 });
 
+// Joi schema for updating a post
 export const postSchemaUpdate = Joi.object().keys({
   title: Joi.string().required(),
   price: Joi.number().required(),
@@ -76,7 +76,7 @@ export const postSchemaUpdate = Joi.object().keys({
   districtID: Joi.string().custom(objectIdValidator).required(),
   areaID: Joi.string().custom(objectIdValidator).required(),
   address: Joi.string().required(),
-  feedback: Joi.string().optional(),
+  feedback: Joi.string(),
   description: Joi.string(),
   size: Joi.array().required(),
   color: Joi.array().required(),

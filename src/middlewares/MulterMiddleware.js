@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 const UPLOAD_DESTINATION = "./uploads";
 
-//Create folder if its not exist
+//Create folder if it's not exist
 fs.mkdirSync(UPLOAD_DESTINATION, { recursive: true });
 
 const storage = multer.diskStorage({

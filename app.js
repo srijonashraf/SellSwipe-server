@@ -62,8 +62,6 @@ app.get("/test", function (req, res, next) {
   const reqIp = req.ip;
   const reqHeader = req.headers["x-forwarded-for"];
   const reqConnection = req.connection.remoteAddress;
-  console.log(req)
-  console.log(reqIp, reqHeader, reqConnection);
   res.json({
     reqIp: reqIp,
     reqHeader: reqHeader,

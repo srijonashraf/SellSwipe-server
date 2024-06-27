@@ -1,9 +1,12 @@
 import {
-  OTPVerifyService,
-  recoverResetPasswordService,
+  emailVerificationByLinkService,
+  emailVerificationByOtpService,
+  resetPasswordByLinkService,
+  resetPasswordByOtpService,
+  sendResetPasswordEmailService,
+  sendVerificationEmailService,
   userAllSessionService,
   userAvatarUpdateService,
-  userEmailVerifyService,
   userLoginService,
   userLogoutFromSessionService,
   userNidUpdateRequestService,
@@ -48,21 +51,6 @@ export const userProfileDetails = async (req, res) => {
   res.status(200).json(result);
 };
 
-export const userEmailVerify = async (req, res) => {
-  const result = await userEmailVerifyService(req);
-  res.status(200).json(result);
-};
-
-export const OTPVerify = async (req, res) => {
-  const result = await OTPVerifyService(req);
-  res.status(200).json(result);
-};
-
-export const recoverResetPassword = async (req, res) => {
-  const result = await recoverResetPasswordService(req);
-  res.status(200).json(result);
-};
-
 export const userAllSession = async (req, res) => {
   const result = await userAllSessionService(req);
   res.status(200).json(result);
@@ -70,5 +58,35 @@ export const userAllSession = async (req, res) => {
 
 export const userLogoutFromSession = async (req, res) => {
   const result = await userLogoutFromSessionService(req);
+  res.status(200).json(result);
+};
+
+export const sendVerificationEmail = async (req, res) => {
+  const result = await sendVerificationEmailService(req);
+  res.status(200).json(result);
+};
+
+export const sendResetPasswordEmail = async (req, res) => {
+  const result = await sendResetPasswordEmailService(req);
+  res.status(200).json(result);
+};
+
+export const emailVerificationByLink = async (req, res) => {
+  const result = await emailVerificationByLinkService(req);
+  res.status(200).json(result);
+};
+
+export const emailVerificationByOtp = async (req, res) => {
+  const result = await emailVerificationByOtpService(req);
+  res.status(200).json(result);
+};
+
+export const resetPasswordByLink = async (req, res) => {
+  const result = await resetPasswordByLinkService(req);
+  res.status(200).json(result);
+};
+
+export const resetPasswordByOtp = async (req, res) => {
+  const result = await resetPasswordByOtpService(req);
   res.status(200).json(result);
 };

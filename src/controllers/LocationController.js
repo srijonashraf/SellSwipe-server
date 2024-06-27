@@ -13,7 +13,6 @@ import {
   updateDivisionService,
 } from "./../services/LocationServices.js";
 
-//Division
 export const createDivision = async (req, res) => {
   const result = await createDivisionService(req);
   res.status(200).json(result);

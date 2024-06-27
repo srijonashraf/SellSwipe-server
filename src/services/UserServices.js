@@ -618,7 +618,7 @@ export const resetPasswordByLinkService = async (req) => {
 
     const emailTemplateResponse = afterResetPasswordTemplate({
       name: user.name,
-      ip: req.ip,
+      ip: req.headers["x-forwarded-for"],
       location: location,
       device: userAgent.platform,
       time: new Date().toLocaleString("en-NZ", { timeZone: "Asia/Dhaka" }),
@@ -699,11 +699,17 @@ export const resetPasswordByOtpService = async (req, res) => {
 
     const emailTemplateResponse = afterResetPasswordTemplate({
       name: user.name,
-      ip: req.ip,
+      ip: req.headers["x-forwarded-for"],
       location: location,
       device: userAgent.platform,
       time: new Date().toLocaleString("en-NZ", { timeZone: "Asia/Dhaka" }),
     });
+
+    await EmailSend(
+      user.email,
+      emailTemplateResponse.subject,
+      emailTemplateResponse.htmlContent
+    );
 
     return { status: "success", message: "Password reset successfully" };
   } catch (error) {

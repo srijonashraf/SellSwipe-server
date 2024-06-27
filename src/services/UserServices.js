@@ -679,7 +679,7 @@ export const resetPasswordByOtpService = async (req, res) => {
       return { status: "fail", message: "Otp is invalid or expired" };
     }
 
-    let updatePasswordResponse = await UserModel.findOneAndUpdate(
+    let user = await UserModel.findOneAndUpdate(
       { email: email },
       { $set: { password: newPassword } },
       {
@@ -687,7 +687,7 @@ export const resetPasswordByOtpService = async (req, res) => {
       }
     );
 
-    if (!updatePasswordResponse) {
+    if (!user) {
       return { status: "fail", message: "Password reset failed" };
     }
 

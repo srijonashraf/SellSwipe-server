@@ -44,7 +44,9 @@ mongoose
   });
 
 app.get("/", function (req, res) {
-  res.send("Hello from SellSwipe");
+  res.send(
+    '<h1 style="display: flex; align-items: center; justify-content: center;">Hello from SellSwipe</h1>'
+  );
 });
 
 app.use("/api/v1/", publicRouter); //Public Router

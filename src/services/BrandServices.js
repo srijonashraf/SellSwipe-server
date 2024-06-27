@@ -1,4 +1,5 @@
 import BrandModel from "./../models/BrandModel.js";
+import { baseUrl } from './../constants/BaseUrl.js';
 export const createBrandService = async (req) => {
   try {
     let reqBody = req.body;

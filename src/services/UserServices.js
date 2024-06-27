@@ -11,7 +11,21 @@ import {
 import SessionDetailsModel from "../models/SessionDetailsModel.js";
 import OtpModel from "./../models/OtpModel.js";
 import EmailSend from "../helper/EmailHelper.js";
-import bcrypt from "bcrypt";
+import {
+  afterEmailVerificationTemplate,
+  afterResetPasswordTemplate,
+  emailVerificationTemplate,
+  resetPasswordTemplate,
+} from "../emailTemplate/SendEmailTemplate.js";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import validator from "validator";
+import Joi from "joi";
+import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
+import { currentTime } from "./../constants/CurrectTime.js";
+import { baseUrl } from "../constants/BaseUrl.js";
+import { fetchLocation } from "./../helper/LocationHelper.js";
+dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
 
@@ -22,37 +36,19 @@ export const userRegistrationService = async (req) => {
     const existingUser = await UserModel.find({
       email: userEmail,
     }).count();
+
     if (!existingUser) {
-      const response = await UserModel.create(reqBody);
+      const newUser = await UserModel.create(reqBody);
 
-      let EmailText = `
-      <html>
-      <body>
-        <div style="font-family: Helvetica, Arial, sans-serif; min-width: 1000px; overflow: auto; line-height: 2">
-          <div style="margin: 50px auto; width: 70%; padding: 20px 0">
-            <div style="border-bottom: 1px solid #eee">
-              <a href="" style="font-size: 1.4em; color: #00466a; text-decoration: none; font-weight: 600">SellSwipe</a>
-            </div>
-            <p style="font-size: 1.1em">Hi,</p>
-            <p>Hey, ${reqBody.name}, Welcome to SellSwipe. Your account has been successfully created. You will soon receive an additional email to verify your email address.</p>
-            <p style="font-size: 0.9em;">Regards,<br />SellSwipe</p>
-            <hr style="border: none; border-top: 1px solid #eee" />
-            <div style="float: right; padding: 8px 0; color: #aaa; font-size: 0.8em; line-height: 1; font-weight: 300">
-              <p>SellSwipe Team</p>
-              <p>Dhanmondi, Dhaka</p>
-              <p>Bangladesh</p>
-            </div>
-          </div>
-        </div>
-        </body>
-        </html>
-      `;
+      await sendVerificationEmailService(req);
 
-      let EmailSubject = "Welcome to SellSwipe";
+      const newUserObj = newUser.toObject();
+      delete newUserObj.password;
 
-      await EmailSend(userEmail, EmailText, EmailSubject);
-      await userEmailVerifyService(req);
-      return { status: "success", data: response };
+      return {
+        status: "success",
+        data: newUserObj,
+      };
     }
     return { status: "fail", message: "This account already exist" };
   } catch (error) {
@@ -74,10 +70,11 @@ export const userLoginService = async (req, res, next) => {
       await user.save();
       return {
         status: "fail",
-        code:1,
+        code: 1,
         message: "Wrong credential",
       };
     }
+
     const packet = { _id: user._id, role: user.role };
 
     const [accessTokenResponse, refreshTokenResponse] = await Promise.all([
@@ -87,16 +84,7 @@ export const userLoginService = async (req, res, next) => {
 
     // //!!Free limit 45 Fire in a minute, if anything goes wrong check here.
     // Fetch location details based on IP address
-    let location;
-    try {
-      const fetchResponse = await fetch(`http://ip-api.com/json/${req.ip}`);
-      location = await fetchResponse.json();
-      // console.log(location)
-    } catch (fetchError) {
-      console.error("Error fetching location:", fetchError);
-      // Handle fetch error, maybe fallback to default location or log the error
-      location = { error: "Unable to fetch location" };
-    }
+    const location = await fetchLocation(req);
     //Set session details to DB
     const sessionBody = {
       deviceName: req.headers["user-agent"],
@@ -151,7 +139,7 @@ export const userAvatarUpdateService = async (req) => {
     //Upload on cloudinary
     const userAvatar = await uploadOnCloudinary(filePath);
     const response = await UserModel.findOne({ _id: userID }).exec();
-    //At first delete the avatar if any
+    //At first delete the previous avatar
     if (response.avatar.pid) {
       await destroyOnCloudinary(response.avatar.pid);
     }
@@ -186,23 +174,29 @@ export const userNidUpdateRequestService = async (req) => {
       throw new Error("File missing.");
     }
 
-    //Todo: User can select any images of NID and can delete that
-    //Upload on Cloudinary
-    const nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
-    const nidBackResponse = await uploadOnCloudinary(nidBack[0].path);
-
     const user = await UserModel.findOne({ _id: userID }).exec();
-
-    if (!user) {
-      return { status: "fail", message: "User not found." };
+    if (user.nidSubmitted) {
+      return {
+        status: "fail",
+        message: "An approval request is pending already.",
+      };
     }
 
+    //Todo: User can select any images of NID and can delete that
     //Delete Existing File
     if (user.nidFront && user.nidFront.pid) {
       await destroyOnCloudinary(user.nidFront.pid);
     }
     if (user.nidBack && user.nidBack.pid) {
       await destroyOnCloudinary(user.nidBack.pid);
+    }
+
+    //Upload on Cloudinary
+    const nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
+    const nidBackResponse = await uploadOnCloudinary(nidBack[0].path);
+
+    if (!user) {
+      return { status: "fail", message: "User not found." };
     }
 
     //Save new file links
@@ -267,145 +261,6 @@ export const userProfileDetailsService = async (req) => {
   }
 };
 
-//!Redirect to email verification from frontend, without verifying email user will not be able to login.
-
-export const userEmailVerifyService = async (req) => {
-  try {
-    let userEmail = req.query.email || req.body.email;
-    let otp = Math.floor(100000 + Math.random() * 900000);
-    const user = await UserModel.findOne({ email: userEmail });
-    if (!user) {
-      return { status: "fail", message: "No registered user found" };
-    }
-
-    const response = await OtpModel.create({
-      userID: user._id,
-      email: userEmail,
-      otp: otp,
-    });
-
-    let EmailText = `
-    <html>
-    <body>
-      <div style="font-family: Helvetica, Arial, sans-serif; min-width: 1000px; overflow: auto; line-height: 2">
-        <div style="margin: 50px auto; width: 70%; padding: 20px 0">
-          <div style="border-bottom: 1px solid #eee">
-            <a href="" style="font-size: 1.4em; color: #00466a; text-decoration: none; font-weight: 600">SellSwipe</a>
-          </div>
-          <p style="font-size: 1.1em">Hi,</p>
-          <p>Thank you for choosing SellSwipe. Use the following OTP to verify your email address. OTP is valid for 3 minutes.</p>
-          <h2 style="background: #00466a; margin: 0 auto; width: max-content; padding: 0 10px; color: #fff; border-radius: 4px;">${otp}</h2>
-          <p style="font-size: 0.9em;">Regards,<br />SellSwipe</p>
-          <hr style="border: none; border-top: 1px solid #eee" />
-          <div style="float: right; padding: 8px 0; color: #aaa; font-size: 0.8em; line-height: 1; font-weight: 300">
-            <p>SellSwipe Team</p>
-            <p>Dhanmondi, Dhaka</p>
-            <p>Bangladesh</p>
-          </div>
-        </div>
-      </div>
-      </body>
-      </html>
-    `;
-
-    let EmailSubject = "SellSwipe - Email Verification";
-
-    await EmailSend(userEmail, EmailText, EmailSubject);
-
-    return { status: "success", message: "6 digit OTP is sent successfully" };
-  } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
-  }
-};
-
-export const OTPVerifyService = async (req) => {
-  try {
-    let otp = req.query.otp;
-    let email = req.query.email;
-    const otpResponse = await OtpModel.findOne({
-      otp: otp,
-      email: email,
-    });
-
-    if (!otpResponse) {
-      return { status: "fail", message: "OTP in invalid or expired" };
-    }
-
-    const currentTime = new Date();
-    const createdAt = new Date(otpResponse.createdAt);
-    const timeDifference = currentTime - createdAt;
-
-    // 3 minutes in milliseconds; the expiration time of OTP
-    const expirationTime = 3 * 60 * 1000;
-
-    if (timeDifference > expirationTime) {
-      otpResponse.expired = true;
-      await otpResponse.save();
-      return { status: "fail", message: "OTP has expired" };
-    }
-
-    otpResponse.otp = 0;
-    await otpResponse.save();
-
-    await UserModel.updateOne(
-      { email: otpResponse.email },
-      { emailVerified: true },
-      { new: true }
-    );
-    return { status: "success", message: "OTP verified successfully" };
-  } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
-  }
-};
-
-export const recoverResetPasswordService = async (req, res) => {
-  try {
-    //!Apply URL based password recovery, user will receive a url basically domain/api/path/token and then they will send a GET requets and backend will verify using token
-    let email = req.body.email;
-    let otp = req.body.otp;
-    let newPassword = req.body.newPassword;
-    let confirmPassword = req.body.confirmPassword;
-
-    if (newPassword !== confirmPassword) {
-      return {
-        status: "fail",
-        message: "Password didn't matched, Password reset failed",
-      };
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    let response = await OtpModel.findOne({
-      email: email,
-      otp: otp,
-    });
-
-    if (!response) {
-      return { status: "fail", message: "Password reset failed" };
-    }
-
-    let setPasswordResponse = await UserModel.findOneAndUpdate(
-      { email: email },
-      { $set: { password: hashedPassword } },
-      {
-        new: true,
-      }
-    );
-
-    if (!setPasswordResponse) {
-      return { status: "fail", message: "Password reset failed" };
-    }
-    response.otp = 0;
-    await response.save();
-    return { status: "success", message: "Password reset successfully" };
-  } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
-  }
-};
-
 export const userAllSessionService = async (req, res) => {
   try {
     let userID = new ObjectID(req.headers.id);
@@ -427,28 +282,412 @@ export const userAllSessionService = async (req, res) => {
 
 export const userLogoutFromSessionService = async (req, res) => {
   try {
-    //TODO Add a middleware in app.js to check the cookies token with db token everytime, suppose any user just deleted a session so the token will be deleted from db but still stay on the client side this middlware will catch the issue and generate a error of Session Expired
-    //!Note: AuthMiddleware already doing his job matching the session details with User Model. So we will add the above mentioned middlware later for more better and faster session inspect experience
-    let sessionID = req.query.sessionId;
-    const matchSessionWithUser = await UserModel.findOne({
+    const sessionID = req.query.sessionId;
+
+    // Find the user and check if the sessionID exists in the sessionId array
+    const user = await UserModel.findOne({
       _id: req.headers.id,
-      sessionId: sessionID,
+      sessionId: { $in: [sessionID] },
     }).select("sessionId");
 
-    if (!matchSessionWithUser) {
+    if (!user) {
       return {
         status: "fail",
         message:
-          "Failed to Logout from the Session. SessionID not found in User Model",
+          "Failed to logout from the session. SessionID not found in User Model.",
       };
     }
 
+    // Delete the session from SessionDetailsModel
     const response = await SessionDetailsModel.deleteOne({ _id: sessionID });
 
     if (!response.deletedCount) {
-      return { status: "fail", message: "Failed to Logout from Session" };
+      return {
+        status: "fail",
+        message: "Failed to logout from session.",
+      };
     }
-    return { status: "success", message: "Logged out from the Session" };
+
+    // Remove the sessionID from the user's sessionId array
+    const sessionIndex = user.sessionId.indexOf(sessionID);
+    if (sessionIndex > -1) {
+      user.sessionId.splice(sessionIndex, 1);
+    }
+
+    // Save the updated user document
+    await user.save();
+
+    return {
+      status: "success",
+      message: "Logged out from the session.",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      status: "fail",
+      message: "Something went wrong.",
+    };
+  }
+};
+
+export const sendVerificationEmailService = async (req) => {
+  try {
+    const input = req.body;
+
+    //Joi validation
+    const objectSchema = Joi.object({
+      email: Joi.string().email().required(),
+    }).unknown(true);
+
+    const { error, value } = objectSchema.validate(input, {
+      abortEarly: false,
+    });
+    if (error) {
+      return {
+        status: "fail",
+        message: "Invalid object",
+        errors: error.details,
+      };
+    }
+
+    // Get the email after validation
+    let userEmail = validator.escape(value.email);
+
+    let otp = Math.floor(100000 + Math.random() * 900000);
+    let token = jwt.sign({ userEmail }, process.env.JWT_GENERAL_TOKEN_SECRET, {
+      expiresIn: process.env.TOKEN_EXPIRE_TIME,
+    });
+
+    const user = await UserModel.findOne({ email: userEmail }).exec();
+    if (!user) {
+      return { status: "fail", message: "No registered user found" };
+    }
+
+    //These links will be followed by frontend
+
+    const link = `${baseUrl(req)}/emailVerificationByLink?userId=${
+      user._id
+    }&token=${token}`;
+
+    const sentOTP = await OtpModel.create({
+      userID: user._id,
+      email: user.email,
+      otp: otp,
+      token: token,
+      initiated: currentTime,
+      expiresAt: currentTime + parseInt(process.env.OTP_EXPIRE_TIME),
+      expired: false,
+    });
+
+    const emailTemplateResponse = await emailVerificationTemplate({
+      name: user.name,
+      link: link,
+    });
+    await EmailSend(
+      user.email,
+      emailTemplateResponse.subject,
+      emailTemplateResponse.htmlContent
+    );
+
+    return {
+      status: "success",
+      message: "A verification email sent successfully! Check your mailbox.",
+    };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const sendResetPasswordEmailService = async (req) => {
+  try {
+    //If from UserRegistration then get the input from body and if from ResetPassword then from query
+    const input = req.query;
+
+    //Joi validation
+    const objectSchema = Joi.object({
+      email: Joi.string().email().required(),
+    }).unknown(true);
+
+    const { error, value } = objectSchema.validate(input, {
+      abortEarly: false,
+    });
+    if (error) {
+      return {
+        status: "fail",
+        message: "Invalid object",
+        errors: error.details,
+      };
+    }
+
+    // Get the email after validation
+    let userEmail = validator.escape(value.email);
+
+    let otp = Math.floor(100000 + Math.random() * 900000);
+    let token = jwt.sign({ userEmail }, process.env.JWT_GENERAL_TOKEN_SECRET, {
+      expiresIn: process.env.TOKEN_EXPIRE_TIME,
+    });
+
+    const user = await UserModel.findOne({ email: userEmail }).exec();
+    if (!user) {
+      return { status: "fail", message: "No registered user found" };
+    }
+
+    //These links will be followed by frontend
+
+    const link = `${baseUrl(req)}/resetPasswordByLink?userId=${
+      user._id
+    }&token=${token}`;
+
+    const sentOTP = await OtpModel.create({
+      userID: user._id,
+      email: user.email,
+      otp: otp,
+      token: token,
+      initiated: currentTime,
+      expiresAt: currentTime + parseInt(process.env.OTP_EXPIRE_TIME),
+      expired: false,
+    });
+
+    const emailTemplateResponse = await resetPasswordTemplate({
+      name: user.name,
+      link: link,
+      otp: otp,
+    });
+
+    await EmailSend(
+      user.email,
+      emailTemplateResponse.subject,
+      emailTemplateResponse.htmlContent
+    );
+
+    return {
+      status: "success",
+      message: "A verification email sent successfully! Check your mailbox.",
+    };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const emailVerificationByLinkService = async (req) => {
+  try {
+    const requestQueryParams = req.query;
+
+    inputSanitizer(requestQueryParams);
+
+    const { userId, token } = requestQueryParams;
+    if (!userId || !token) {
+      return { status: "fail", message: "Link is invalid or broken" };
+    }
+
+    if (!validator.isMongoId(userId) || !validator.isJWT(token)) {
+      return { status: "fail", message: "The objects are not valid" };
+    }
+
+    const otpRecord = await OtpModel.findOne({
+      userID: userId,
+      token: token,
+      expired: false,
+      expiresAt: { $gte: currentTime },
+    }).exec();
+
+    if (!otpRecord) {
+      return { status: "fail", message: "Invalid or expired token" };
+    }
+
+    const user = await UserModel.findOneAndUpdate(
+      { _id: userId },
+      { emailVerified: true },
+      { new: true }
+    ).exec();
+
+    if (!user) {
+      return { status: "fail", message: "User not found" };
+    }
+
+    await OtpModel.deleteMany({ userID: userId });
+
+    const emailTemplateResponse = afterEmailVerificationTemplate({
+      name: user.name,
+    });
+
+    await EmailSend(
+      user.email,
+      emailTemplateResponse.subject,
+      emailTemplateResponse.htmlContent
+    );
+
+    return { status: "success", message: "Email verified successfully" };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const emailVerificationByOtpService = async (req) => {
+  try {
+    const requestQueryParams = req.query;
+    inputSanitizer(requestQueryParams);
+    const { otp, email } = requestQueryParams;
+
+    const otpResponse = await OtpModel.findOne({
+      otp,
+      email,
+      expired: false,
+      expiresAt: { $gte: currentTime },
+    }).exec();
+    if (!otpResponse) {
+      return { status: "fail", message: "OTP is invalid or expired" };
+    }
+
+    const user = await UserModel.findOneAndUpdate(
+      { email: otpResponse.email },
+      { emailVerified: true },
+      { new: true }
+    );
+
+    if (!user) {
+      return { status: "fail", message: "User not found" };
+    }
+
+    await OtpModel.deleteMany({ userID: user._id });
+
+    // Send email verification success template
+    const emailTemplateResponse = afterEmailVerificationTemplate({
+      name: user.name,
+    });
+
+    await EmailSend(
+      user.email,
+      emailTemplateResponse.subject,
+      emailTemplateResponse.htmlContent
+    );
+
+    return { status: "success", message: "OTP verified successfully" };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const resetPasswordByLinkService = async (req) => {
+  try {
+    const requestQueryParam = req.query;
+    const requestBody = req.body;
+    inputSanitizer(requestQueryParam);
+    inputSanitizer(requestBody);
+
+    const { userId, token } = requestQueryParam;
+    const { newPassword, confirmPassword } = requestBody;
+
+    if (newPassword !== confirmPassword) {
+      return { status: "fail", message: "Password didn't matched" };
+    }
+    const user = await UserModel.findById(userId).exec();
+
+    if (!user) {
+      return { status: "fail", message: "User not found" };
+    }
+
+    const validToken = await OtpModel.findOne({
+      userID: userId,
+      email: user.email,
+      token,
+      expired: false,
+      expiresAt: { $gte: currentTime },
+    }).exec();
+
+    if (!validToken) {
+      return { status: "fail", message: "Token is invalid or expired" };
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    await OtpModel.deleteMany({ userID: userId });
+
+    const location = await fetchLocation(req);
+
+    const emailTemplateResponse = afterResetPasswordTemplate({
+      name: user.name,
+      ip: req.ip,
+      location: location,
+      device: req.get("User-Agent"),
+      time: new Date(),
+    });
+
+    await EmailSend(
+      user.email,
+      emailTemplateResponse.subject,
+      emailTemplateResponse.htmlContent
+    );
+
+    return { status: "success", message: "Password changed successfully" };
+  } catch (error) {
+    console.error(error);
+    return { status: "fail", message: "Something went wrong" };
+  }
+};
+
+export const resetPasswordByOtpService = async (req, res) => {
+  try {
+    const requestBody = req.body;
+    inputSanitizer(requestBody);
+
+    const schema = Joi.object()
+      .keys({
+        email: Joi.string().email().required(),
+        otp: Joi.number().max(999999).required(),
+        newPassword: Joi.string().required(),
+        confirmPassword: Joi.string().valid(Joi.ref("newPassword")).required(),
+      })
+      .with("newPassword", "confirmPassword");
+
+    const { error, value } = schema.validate(requestBody, {
+      abortEarly: false,
+    });
+    if (error) {
+      return {
+        status: "fail",
+        message: "Object validation failed",
+        error: error,
+      };
+    }
+
+    const { email, otp, newPassword, confirmPassword } = value;
+
+    if (newPassword !== confirmPassword) {
+      return { status: "fail", message: "Password didn't matched" };
+    }
+
+    let otpResponse = await OtpModel.findOne({
+      email: email,
+      otp: otp,
+      expired: false,
+      expiresAt: { $gte: currentTime },
+    }).exec();
+
+    if (!otpResponse) {
+      return { status: "fail", message: "Otp is invalid or expired" };
+    }
+
+    let updatePasswordResponse = await UserModel.findOneAndUpdate(
+      { email: email },
+      { $set: { password: newPassword } },
+      {
+        new: true,
+      }
+    );
+
+    if (!updatePasswordResponse) {
+      return { status: "fail", message: "Password reset failed" };
+    }
+
+    await OtpModel.deleteMany({ email: email });
+
+    return { status: "success", message: "Password reset successfully" };
   } catch (error) {
     console.error(error);
     return { status: "fail", message: "Something went wrong" };

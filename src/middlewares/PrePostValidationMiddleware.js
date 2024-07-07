@@ -1,3 +1,4 @@
+import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
 import UserModel from "../models/UserModel.js";
 
 export const PrePostValidation = async (req, res, next) => {
@@ -17,6 +18,11 @@ export const PrePostValidation = async (req, res, next) => {
     }
 
     if (!user.nidVerified) {
+      if (req.files) {
+        for (const file of req.files) {
+          removeUnusedLocalFile(file.path);
+        }
+      }
       return res.status(200).json({
         status: "fail",
         code: 9,
@@ -25,6 +31,11 @@ export const PrePostValidation = async (req, res, next) => {
     }
 
     if (user.accountStatus !== "Validate") {
+      if (req.files) {
+        for (const file of req.files) {
+          removeUnusedLocalFile(file.path);
+        }
+      }
       return res.status(200).json({
         status: "fail",
         code: 8,

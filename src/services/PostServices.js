@@ -10,6 +10,21 @@ import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
 
 const ObjectID = mongoose.Types.ObjectId;
 
+export const postByUserService = async (req, next) => {
+  try {
+    const userId = req.headers.id;
+    const posts = await PostModel.find({ userID: userId });
+
+    if (posts.length === 0) {
+      return { status: "success", message: "No post found" };
+    }
+
+    return { status: "success", data: posts };
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createPostService = async (req, next) => {
   try {
     let reqBody = req.body;

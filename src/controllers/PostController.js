@@ -2,9 +2,16 @@ import {
   createPostService,
   deletePostImages,
   deletePostService,
+  postByUserService,
   postListService,
   updatePostService,
 } from "./../services/PostServices.js";
+
+export const PostByUser = async (req, res, next) => {
+  let result = await postByUserService(req, next);
+  return res.status(200).json(result);
+};
+
 export const CreatePost = async (req, res, next) => {
   let result = await createPostService(req, next);
   return res.status(200).json(result);

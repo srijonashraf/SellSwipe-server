@@ -56,6 +56,12 @@ protectedRouter.get(
   UserController.userLogoutFromSession
 );
 
+protectedRouter.get(
+  "/postByUser",
+  AuthVerifyMiddlware,
+  PostController.PostByUser
+);
+
 protectedRouter.post(
   "/createPost",
   upload.array("images", 5),

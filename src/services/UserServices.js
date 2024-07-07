@@ -734,3 +734,4 @@ export const resetPasswordByOtpService = async (req, next) => {
     next(error);
   }
 };
+

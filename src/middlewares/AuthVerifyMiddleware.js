@@ -35,7 +35,9 @@ export default async (req, res, next) => {
             "_id name email role sessionId"
           );
           if (!response) {
-            return res.status(401).json({ status: "fail", message:"Invalid Access Token" });
+            return res
+              .status(401)
+              .json({ status: "fail", message: "Invalid Access Token" });
           }
 
           /*Check if the accessToken matches with sessionDetails' accessToken
@@ -69,7 +71,9 @@ export default async (req, res, next) => {
             "_id name email role sessionId"
           );
           if (!response) {
-            return res.status(401).json({ status: "fail", message:"Invalid Access Token" });
+            return res
+              .status(401)
+              .json({ status: "fail", message: "Invalid Access Token" });
           }
 
           /*Check if the accessToken matches with sessionDetails' accessToken
@@ -105,6 +109,7 @@ export default async (req, res, next) => {
       }
     );
   } catch (error) {
+    console.log(error);
     return res
       .status(500)
       .json({ status: "fail", message: "Something went wrong" });

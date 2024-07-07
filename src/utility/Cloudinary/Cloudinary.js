@@ -21,17 +21,17 @@ export const uploadOnCloudinary = async (localFilePath) => {
       fs.unlinkSync(localFilePath); // Ensure the file is deleted if the upload fails
       return null;
     }
-    
+
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath); // remove the locally saved temporary file as the upload operation got failed
     return null;
   }
 };
 
 export const destroyOnCloudinary = async (pid) => {
   try {
+    console.log(pid)
     if (!pid) return null;
     const response = await cloudinary.uploader.destroy(pid, {
       invalidate: true,

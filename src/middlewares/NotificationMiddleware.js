@@ -28,6 +28,8 @@ export const SendNotification = async (req, res, next) => {
     next();
   } catch (error) {
     console.error(error);
-    return null;
+    return res
+      .status(500)
+      .json({ status: "fail", message: "Something went wrong" });
   }
 };

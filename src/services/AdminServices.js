@@ -8,7 +8,8 @@ import {
 } from "./../helper/TokenGeneratorHelper.js";
 import mongoose from "mongoose";
 import PostDetailsModel from "../models/PostDetailsModel.js";
-export const adminLoginService = async (req) => {
+
+export const adminLoginService = async (req, next) => {
   try {
     let reqBody = req.body;
     const data = await AdminModel.findOne({ email: reqBody.email }).exec();
@@ -61,12 +62,11 @@ export const adminLoginService = async (req) => {
       return { status: "fail", message: "Failed to login" };
     }
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const adminProfileDetailsService = async (req) => {
+export const adminProfileDetailsService = async (req, next) => {
   try {
     const data = await AdminModel.findOne({ _id: req.headers.id }).select(
       "-password"
@@ -76,29 +76,27 @@ export const adminProfileDetailsService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const addNewAdminService = async (req) => {
+export const addNewAdminService = async (req, next) => {
   try {
     let reqBody = req.body;
     const data = await AdminModel.create(reqBody);
     if (!data) {
       return { status: "fail", message: "Failed to add new admin" };
     }
-    //Added superAdmin info in the ref
+    //Set superAdmin info in the ref
     data.ref = { name: req.headers.name, id: req.headers.id };
     await data.save();
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const deleteAdminService = async (req) => {
+export const deleteAdminService = async (req, next) => {
   try {
     let id = req.query.id;
     const data = await AdminModel.deleteOne({ _id: id });
@@ -107,12 +105,11 @@ export const deleteAdminService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const adminListService = async (req) => {
+export const adminListService = async (req, next) => {
   try {
     const data = await AdminModel.find({ role: "Admin" });
     if (!data) {
@@ -120,12 +117,11 @@ export const adminListService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const userListService = async (req) => {
+export const userListService = async (req, next) => {
   try {
     const data = await UserModel.find({ role: "User" });
     if (!data) {
@@ -133,12 +129,11 @@ export const userListService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const reviewPostListService = async (req) => {
+export const reviewPostListService = async (req, next) => {
   try {
     const data = await PostModel.find({ onReview: true, isApproved: false });
     if (!data) {
@@ -146,12 +141,11 @@ export const reviewPostListService = async (req) => {
     }
     return { status: "success", total: data.length, data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const approvedPostListService = async (req) => {
+export const approvedPostListService = async (req, next) => {
   try {
     const data = await PostModel.find({ isApproved: true, onReview: false });
     if (!data) {
@@ -159,17 +153,11 @@ export const approvedPostListService = async (req) => {
     }
     return { status: "success", total: data.length, data: data };
   } catch (error) {
-    console.log(error);
-    return {
-      status: "fail",
-      message: "Something went wrong",
-      total: data.length,
-      data: error,
-    };
+    next(error);
   }
 };
 
-export const declinedPostListService = async (req) => {
+export const declinedPostListService = async (req, next) => {
   try {
     const data = await PostModel.find({ isDeclined: true });
     if (!data) {
@@ -177,17 +165,11 @@ export const declinedPostListService = async (req) => {
     }
     return { status: "success", total: data.length, data: data };
   } catch (error) {
-    console.log(error);
-    return {
-      status: "fail",
-      message: "Something went wrong",
-      total: data.length,
-      data: error,
-    };
+    next(error);
   }
 };
 
-export const reportedPostListService = async (req) => {
+export const reportedPostListService = async (req, next) => {
   try {
     const data = await PostModel.find({ reportAdmin: true });
     if (!data) {
@@ -195,17 +177,11 @@ export const reportedPostListService = async (req) => {
     }
     return { status: "success", total: data.length, data: data };
   } catch (error) {
-    console.log(error);
-    return {
-      status: "fail",
-      message: "Something went wrong",
-      total: data.length,
-      data: error,
-    };
+    next(error);
   }
 };
 
-export const withdrawReportService = async (req) => {
+export const withdrawReportService = async (req, next) => {
   try {
     const postID = req.query.postId;
     const data = await PostModel.findOneAndUpdate(
@@ -220,17 +196,11 @@ export const withdrawReportService = async (req) => {
     }
     return { status: "success", total: data.length, data: data };
   } catch (error) {
-    console.log(error);
-    return {
-      status: "fail",
-      message: "Something went wrong",
-      total: data.length,
-      data: error,
-    };
+    next(error);
   }
 };
 
-export const approvePostService = async (req) => {
+export const approvePostService = async (req, next) => {
   try {
     const postID = req.query.postId;
     const { id, name } = req.headers;
@@ -269,12 +239,11 @@ export const approvePostService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const declinePostService = async (req) => {
+export const declinePostService = async (req, next) => {
   try {
     const postID = req.query.postId;
     const { id, name } = req.headers;
@@ -314,12 +283,11 @@ export const declinePostService = async (req) => {
 
     return { status: "success", data: data };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const deletePostService = async (req) => {
+export const deletePostService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
     const postID = req.query.postId;
@@ -353,14 +321,14 @@ export const deletePostService = async (req) => {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    console.error(error);
+    next(error);
     return { status: "fail", message: "Something went wrong" };
   } finally {
     session.endSession();
   }
 };
 
-export const sendFeedbackService = async (req) => {
+export const sendFeedbackService = async (req, next) => {
   try {
     const postID = req.query.postId;
     const reqBody = req.body.feedback;
@@ -381,12 +349,11 @@ export const sendFeedbackService = async (req) => {
 
     return { status: "success", data: data };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const warnedAccountListService = async (req) => {
+export const warnedAccountListService = async (req, next) => {
   try {
     const data = await UserModel.find({ accountStatus: "Warning" });
     if (!data) {
@@ -394,12 +361,11 @@ export const warnedAccountListService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const restrictedAccountListService = async (req) => {
+export const restrictedAccountListService = async (req, next) => {
   try {
     const data = await UserModel.find({ accountStatus: "Restricted" });
     if (!data) {
@@ -410,12 +376,11 @@ export const restrictedAccountListService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const withdrawRestrictionsService = async (req) => {
+export const withdrawRestrictionsService = async (req, next) => {
   try {
     let id = req.query.id;
     const data = await UserModel.findOneAndUpdate(
@@ -428,12 +393,11 @@ export const withdrawRestrictionsService = async (req) => {
     }
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const restrictAccountService = async (req) => {
+export const restrictAccountService = async (req, next) => {
   try {
     let id = req.query.id;
     const data = await UserModel.findOneAndUpdate(
@@ -458,12 +422,11 @@ export const restrictAccountService = async (req) => {
 
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const warningAccountService = async (req) => {
+export const warningAccountService = async (req, next) => {
   try {
     let id = req.query.id;
     const data = await UserModel.findOneAndUpdate(
@@ -488,12 +451,11 @@ export const warningAccountService = async (req) => {
 
     return { status: "success", data: data };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };
 
-export const reviewNidListService = async (req) => {
+export const reviewNidListService = async (req, next) => {
   try {
     const data = await UserModel.find({
       nidSubmitted: true,
@@ -513,7 +475,6 @@ export const reviewNidListService = async (req) => {
       data: data,
     };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong", data: error };
+    next(error);
   }
 };

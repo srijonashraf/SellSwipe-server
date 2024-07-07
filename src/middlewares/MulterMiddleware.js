@@ -1,4 +1,4 @@
-import multer from "multer";
+import multer, { MulterError } from "multer";
 import path from "path";
 import fs from "fs";
 const UPLOAD_DESTINATION = "./uploads";
@@ -44,3 +44,14 @@ export const upload = multer({
     }
   },
 });
+
+//Global Error Handler added, below function is for specific multer error handling
+
+// export const uploadErrorHandler = (error, req, res, next) => {
+//   if (error instanceof MulterError) {
+//     return res.status(400).json({ status: "fail", message: error.message });
+//   } else {
+//     console.log("Unknown Error", error);
+//     return res.status(400).json({ status: "fail", message: error.message });
+//   }
+// };

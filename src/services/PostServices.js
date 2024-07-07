@@ -6,16 +6,20 @@ import {
 } from "../utility/Cloudinary/Cloudinary.js";
 import PostDetailsModel from "./../models/PostDetailsModel.js";
 import mapData from "../utility/CreatePost/MapData.js";
+import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
 
 const ObjectID = mongoose.Types.ObjectId;
 
-export const createPostService = async (req) => {
+export const createPostService = async (req, next) => {
   try {
     let reqBody = req.body;
     reqBody.userID = new ObjectID(req.headers.id);
     const { PostData, PostDetailsData } = await mapData(reqBody);
 
     if (!req.files || req.files.length !== 5) {
+      for (const file of req.files) {
+        removeUnusedLocalFile(file.path);
+      }
       return {
         status: "fail",
         message: "Exactly five files must be uploaded",
@@ -28,17 +32,19 @@ export const createPostService = async (req) => {
 
     const [uploadResults] = await Promise.all([Promise.all(uploadPromises)]);
 
-    // Process Cloudinary upload results
+    // Save Cloudinary upload results
     const cloudinaryUrlStore = uploadResults.map((uploadResult) => ({
       url: uploadResult.secure_url,
       pid: uploadResult.public_id,
     }));
 
+    //Set main image with the post data
     PostData.mainImg = {
       url: cloudinaryUrlStore[0].url,
       pid: cloudinaryUrlStore[0].pid,
     };
 
+    //Set details images with the post details data
     for (let i = 1; i < cloudinaryUrlStore.length; i++) {
       PostDetailsData[`img${i}`] = {
         url: cloudinaryUrlStore[i].url,
@@ -46,7 +52,7 @@ export const createPostService = async (req) => {
       };
     }
 
-    // Create post data
+    // Create post data and then create post details data using the id of the post model
     const createPostData = await PostModel.create(PostData);
     PostDetailsData.postID = createPostData._id;
     const createPostDetailsData = await PostDetailsModel.create(
@@ -59,12 +65,14 @@ export const createPostService = async (req) => {
       PostDetails: createPostDetailsData,
     };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", data: error.message };
+    for (const file of req.files) {
+      removeUnusedLocalFile(file.path);
+    }
+    next(error);
   }
 };
 
-export const updatePostService = async (req) => {
+export const updatePostService = async (req, next) => {
   try {
     const postID = new ObjectID(req.query.postId);
     let reqBody = req.body;
@@ -72,6 +80,14 @@ export const updatePostService = async (req) => {
     const { PostData, PostDetailsData } = await mapData(reqBody);
 
     if (!req.files || req.files.length !== 5) {
+      /*Multer begin to upload images one by one untill it faces any error.
+      So, if the total input image doesn't met the required image it will get
+      into this block and the images which has been uploaded already to local path's ./uploads
+      folder will get deleted by `removeUnusedLocalFile` method*/
+
+      for (const file of req.files) {
+        removeUnusedLocalFile(file.path);
+      }
       return {
         status: "fail",
         message: "Exactly five files must be uploaded",
@@ -87,13 +103,29 @@ export const updatePostService = async (req) => {
     }).exec();
 
     const existingDetailsImageObj = existingDetailsImage.toObject();
-    const destroyPromises = Object.keys(existingDetailsImageObj)
-      .slice(0, 4)
-      .map((key) => destroyOnCloudinary(existingDetailsImageObj[key].pid));
 
+    /* Identify keys that match the pattern for image field in database.
+    In this scneraio whic is $img1, $img2...*/
+
+    const imageKeys = Object.keys(existingDetailsImageObj).filter((key) =>
+      key.startsWith("img")
+    );
+
+    /*Fetch existing images from database and then send them to destory function for
+    deletion from cloudinary*/
+    const destroyPromises = imageKeys.map((key) =>
+      destroyOnCloudinary(existingDetailsImageObj[key].pid)
+    );
+
+    /*Upload new images to cloudinary*/
     const uploadPromises = req.files.map((file) =>
       uploadOnCloudinary(file.path)
     );
+
+    /*Destructing the results after promise resovles
+    here `destroyResults` will have the success message for deleted images.
+    `uploadResults` contains all the uploaded image links.
+    `destroySingle` contain the success message of the main image deletation from cloudinry*/
 
     const [destroyResults, uploadResults, destroySingle] = await Promise.all([
       Promise.all(destroyPromises),
@@ -101,18 +133,19 @@ export const updatePostService = async (req) => {
       destroyOnCloudinary(existingMainImage.mainImg.pid),
     ]);
 
-    // Process Cloudinary upload results
+    // Save Cloudinary upload results
     const cloudinaryUrlStore = uploadResults.map((uploadResult) => ({
       url: uploadResult.secure_url,
       pid: uploadResult.public_id,
     }));
 
-    // Update PostData and PostDetailsData with new image URLs
+    // Update PostData with new main image
     PostData.mainImg = {
       url: cloudinaryUrlStore[0].url,
       pid: cloudinaryUrlStore[0].pid,
     };
 
+    //Update PostDetailsData with the new details images
     for (let i = 1; i < cloudinaryUrlStore.length; i++) {
       PostDetailsData[`img${i}`] = {
         url: cloudinaryUrlStore[i].url,
@@ -124,7 +157,7 @@ export const updatePostService = async (req) => {
     PostData.onReview = true;
     PostData.isApproved = false;
 
-    // Create post data
+    // Update post data
     const updatePostData = await PostModel.updateOne(
       { _id: postID },
       {
@@ -147,16 +180,22 @@ export const updatePostService = async (req) => {
       PostDetails: updatePostDetails,
     };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", data: error.message };
+    for (const file of req.files) {
+      removeUnusedLocalFile(file.path);
+    }
+    next(error);
   }
 };
 
-export const deletePostService = async (req) => {
+export const deletePostService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
     const userID = new ObjectID(req.headers.id);
     const postID = new ObjectID(req.query.postId);
+
+    /*Transaction is used here because the full process is conntected
+    with two database collection so if there any issue with any of
+    those collection it will revert the collection to initial position again*/
 
     session.startTransaction();
 
@@ -187,69 +226,93 @@ export const deletePostService = async (req) => {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   } finally {
     session.endSession();
   }
 };
 
-export const deletePostDetailsImage = async (req) => {
+export const deletePostImages = async (req, next) => {
   try {
     const postID = new ObjectID(req.query.postId);
     const pid = req.query.pid;
-    const data = await PostDetailsModel.findOne({
-      postID: postID,
-    });
 
-    if (!data) {
+    // Find the post data
+    const postData = await PostModel.findOne({
+      _id: postID,
+      userID: req.headers.id,
+    }).exec();
+
+    if (!postData) {
       return {
         status: "fail",
-        message: "Failed to delete image of the post because no post found",
+        message: "No post found",
+      };
+    }
+
+    // Check if the main image matches the pid
+    if (postData.mainImg.pid === pid) {
+      const updateResult = await PostModel.updateOne(
+        { _id: postID },
+        { $unset: { mainImg: "" } },
+        { new: true }
+      );
+
+      if (updateResult.modifiedCount > 0) {
+        destroyOnCloudinary(pid);
+        return { status: "success", message: "Main image deleted" };
+      } else {
+        return {
+          status: "fail",
+          message: "Failed to delete main image of the post",
+        };
+      }
+    }
+
+    // Find the post details
+    const postDetailsData = await PostDetailsModel.findOne({
+      postID: postID,
+    }).exec();
+
+    if (!postDetailsData) {
+      return {
+        status: "fail",
+        message:
+          "Failed to delete image of the post because no post details found",
       };
     }
 
     // Iterate through the fields to find and unset the image field with the matching pid
     let updateQuery = {};
-    for (let key in data._doc) {
-      if (data[key] && data[key].pid === pid) {
-        // console.log(data[key]); // this will print the value of img1; here key is img1 and the whole data is inside the data variable
+    for (let key in postDetailsData) {
+      if (postDetailsData[key] && postDetailsData[key].pid === pid) {
         updateQuery[key] = "";
       }
     }
-
-    // console.log(updateQuery); //this will show the key value pair of updated query; example: { img3: '' }
-    // console.log(Object.keys(updateQuery)); //this will print the keys inside the object; example: ['img3']
 
     if (Object.keys(updateQuery).length === 0) {
       return { status: "fail", message: "Image not found" };
     }
 
+    // Update the post details with the unset query
     const result = await PostDetailsModel.updateOne(
-      {
-        postID: postID,
-      },
-      {
-        $unset: updateQuery,
-      },
-      {
-        new: true,
-      }
+      { postID: postID },
+      { $unset: updateQuery },
+      { new: true }
     );
 
     if (result.modifiedCount > 0) {
-      destroyOnCloudinary(pid);
+      await destroyOnCloudinary(pid);
       return { status: "success", message: "Selected image deleted" };
     } else {
       return { status: "fail", message: "Failed to delete image of the post" };
     }
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something Went Wrong" };
+    next(error);
   }
 };
 
-export const postListService = async (req) => {
+export const postListService = async (req, next) => {
   try {
     const data = await PostModel.aggregate([
       {
@@ -306,6 +369,6 @@ export const postListService = async (req) => {
 
     return { status: "success", data: data };
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };

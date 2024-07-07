@@ -1,6 +1,5 @@
 import BrandModel from "./../models/BrandModel.js";
-import { baseUrl } from './../constants/BaseUrl.js';
-export const createBrandService = async (req) => {
+export const createBrandService = async (req, next) => {
   try {
     let reqBody = req.body;
     const data = await BrandModel.create(reqBody);
@@ -10,11 +9,11 @@ export const createBrandService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const updateBrandService = async (req) => {
+export const updateBrandService = async (req, next) => {
   try {
     let BrandID = req.query.brandId;
     const data = await BrandModel.findOneAndUpdate(
@@ -28,11 +27,11 @@ export const updateBrandService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const deleteBrandService = async (req) => {
+export const deleteBrandService = async (req, next) => {
   try {
     let BrandID = req.query.brandId;
     const data = await BrandModel.deleteOne({ _id: BrandID });
@@ -42,11 +41,11 @@ export const deleteBrandService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const listBrandService = async (req) => {
+export const listBrandService = async (req, next) => {
   try {
     const data = await BrandModel.find().select("-createdAt -updatedAt");
     if (!data) {
@@ -55,6 +54,6 @@ export const listBrandService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };

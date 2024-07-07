@@ -50,7 +50,6 @@ export const validateRequest = ({
     } else {
       req.body = validationResult.value;
     }
-
     next();
   };
 };

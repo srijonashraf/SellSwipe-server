@@ -5,7 +5,7 @@ import AreaModel from "./../models/AreaModel.js";
 const ObjectID = mongoose.Types.ObjectId;
 
 //Division
-export const createDivisionService = async (req) => {
+export const createDivisionService = async (req, next) => {
   try {
     let reqBody = req.body;
     const data = await DivisionModel.create(reqBody);
@@ -15,11 +15,11 @@ export const createDivisionService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const updateDivisionService = async (req) => {
+export const updateDivisionService = async (req, next) => {
   try {
     let DivisionID = req.query.divisionId;
     const data = await DivisionModel.findOneAndUpdate(
@@ -33,11 +33,11 @@ export const updateDivisionService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const deleteDivisionService = async (req) => {
+export const deleteDivisionService = async (req, next) => {
   try {
     let DivisionID = req.query.divisionId;
     const data = await DivisionModel.deleteOne({ _id: DivisionID });
@@ -47,11 +47,11 @@ export const deleteDivisionService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const listDivisionService = async (req) => {
+export const listDivisionService = async (req, next) => {
   try {
     const data = await DivisionModel.find().select("-createdAt -updatedAt");
     if (!data) {
@@ -60,12 +60,12 @@ export const listDivisionService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
 //District
-export const createDistrictService = async (req) => {
+export const createDistrictService = async (req, next) => {
   try {
     let DivisionID = new ObjectID(req.query.divisionId);
     const data = await DistrictModel.create(req.body);
@@ -77,11 +77,11 @@ export const createDistrictService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const updateDistrictService = async (req) => {
+export const updateDistrictService = async (req, next) => {
   try {
     let DistrictID = req.query.districtId;
     const data = await DistrictModel.findOneAndUpdate(
@@ -95,11 +95,11 @@ export const updateDistrictService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const deleteDistrictService = async (req) => {
+export const deleteDistrictService = async (req, next) => {
   try {
     let DistrictID = req.query.districtId;
     const data = await DistrictModel.deleteOne({ _id: DistrictID });
@@ -109,11 +109,11 @@ export const deleteDistrictService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const listDistrictService = async (req) => {
+export const listDistrictService = async (req, next) => {
   try {
     let DivisionID = new ObjectID(req.query.divisionId);
     const data = await DistrictModel.find({ divisionID: DivisionID }).select(
@@ -125,13 +125,13 @@ export const listDistrictService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
 //Area
 
-export const createAreaService = async (req) => {
+export const createAreaService = async (req, next) => {
   try {
     let DistrictID = new ObjectID(req.query.districtId);
     const data = await AreaModel.create(req.body);
@@ -143,11 +143,11 @@ export const createAreaService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-// export const createAreaService = async (req) => {
+// export const createAreaService = async (req,next) => {
 //   try {
 //     let DistrictID = new ObjectID(req.query.districtId);
 //     const areaNames = req.body.areaNames; // Assuming the array of area names is passed as 'areaNames'
@@ -167,7 +167,7 @@ export const createAreaService = async (req) => {
 //       return { status: "success", data: createdAreas };
 //     }
 //   } catch (error) {
-//     return { status: "fail", data: error };
+//   next(error)
 //   }
 // };
 
@@ -182,7 +182,7 @@ export const createAreaService = async (req) => {
 //      ]
 //  }
 
-export const updateAreaService = async (req) => {
+export const updateAreaService = async (req, next) => {
   try {
     let AreaID = req.query.areaId;
     const data = await AreaModel.findOneAndUpdate(
@@ -196,11 +196,11 @@ export const updateAreaService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const deleteAreaService = async (req) => {
+export const deleteAreaService = async (req, next) => {
   try {
     let AreaID = req.query.areaId;
     const data = await AreaModel.deleteOne({ _id: AreaID });
@@ -210,11 +210,11 @@ export const deleteAreaService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const listAreaService = async (req) => {
+export const listAreaService = async (req, next) => {
   try {
     let DistrictID = new ObjectID(req.query.districtId);
     const data = await AreaModel.find({ districtID: DistrictID }).select(
@@ -226,6 +226,6 @@ export const listAreaService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };

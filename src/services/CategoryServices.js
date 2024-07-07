@@ -1,5 +1,5 @@
 import CategoryModel from "./../models/CategoryModel.js";
-export const createCategoryService = async (req) => {
+export const createCategoryService = async (req, next) => {
   try {
     let reqBody = req.body;
     const data = await CategoryModel.create(reqBody);
@@ -9,11 +9,11 @@ export const createCategoryService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const updateCategoryService = async (req) => {
+export const updateCategoryService = async (req, next) => {
   try {
     let CategoryID = req.query.categoryId;
     const data = await CategoryModel.findOneAndUpdate(
@@ -27,11 +27,11 @@ export const updateCategoryService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const deleteCategoryService = async (req) => {
+export const deleteCategoryService = async (req, next) => {
   try {
     let CategoryID = req.query.categoryId;
     const data = await CategoryModel.deleteOne({ _id: CategoryID });
@@ -41,11 +41,11 @@ export const deleteCategoryService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const listCategoryService = async (req) => {
+export const listCategoryService = async (req, next) => {
   try {
     const data = await CategoryModel.find().select("-createdAt -updatedAt");
     if (!data) {
@@ -54,6 +54,6 @@ export const listCategoryService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };

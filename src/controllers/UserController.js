@@ -14,13 +14,13 @@ import {
   userProfileUpdateService,
   userRegistrationService,
 } from "./../services/UserServices.js";
-export const userRegistration = async (req, res) => {
-  const result = await userRegistrationService(req);
+export const userRegistration = async (req, res, next) => {
+  const result = await userRegistrationService(req, next);
   res.status(200).json(result);
 };
 
-export const userLogin = async (req, res) => {
-  const result = await userLoginService(req);
+export const userLogin = async (req, res, next) => {
+  const result = await userLoginService(req, next);
   if (result.status === "success") {
     let cookieOption = {
       maxAge: Math.floor(Date.now() / 1000) + 6 * 24 * 60 * 60,
@@ -32,61 +32,61 @@ export const userLogin = async (req, res) => {
   res.status(200).json(result);
 };
 
-export const userAvatarUpdate = async (req, res) => {
-  const result = await userAvatarUpdateService(req);
+export const userAvatarUpdate = async (req, res, next) => {
+  const result = await userAvatarUpdateService(req, next);
   res.status(200).json(result);
 };
-export const userProfileUpdate = async (req, res) => {
-  const result = await userProfileUpdateService(req);
-  res.status(200).json(result);
-};
-
-export const userNidUpdateRequest = async (req, res) => {
-  const result = await userNidUpdateRequestService(req);
+export const userProfileUpdate = async (req, res, next) => {
+  const result = await userProfileUpdateService(req, next);
   res.status(200).json(result);
 };
 
-export const userProfileDetails = async (req, res) => {
-  const result = await userProfileDetailsService(req);
+export const userNidUpdateRequest = async (req, res, next) => {
+  const result = await userNidUpdateRequestService(req, next);
   res.status(200).json(result);
 };
 
-export const userAllSession = async (req, res) => {
-  const result = await userAllSessionService(req);
+export const userProfileDetails = async (req, res, next) => {
+  const result = await userProfileDetailsService(req, next);
   res.status(200).json(result);
 };
 
-export const userLogoutFromSession = async (req, res) => {
-  const result = await userLogoutFromSessionService(req);
+export const userAllSession = async (req, res, next) => {
+  const result = await userAllSessionService(req, next);
   res.status(200).json(result);
 };
 
-export const sendVerificationEmail = async (req, res) => {
-  const result = await sendVerificationEmailService(req);
+export const userLogoutFromSession = async (req, res, next) => {
+  const result = await userLogoutFromSessionService(req, next);
   res.status(200).json(result);
 };
 
-export const sendResetPasswordEmail = async (req, res) => {
-  const result = await sendResetPasswordEmailService(req);
+export const sendVerificationEmail = async (req, res, next) => {
+  const result = await sendVerificationEmailService(req, next);
   res.status(200).json(result);
 };
 
-export const emailVerificationByLink = async (req, res) => {
-  const result = await emailVerificationByLinkService(req);
+export const sendResetPasswordEmail = async (req, res, next) => {
+  const result = await sendResetPasswordEmailService(req, next);
   res.status(200).json(result);
 };
 
-export const emailVerificationByOtp = async (req, res) => {
-  const result = await emailVerificationByOtpService(req);
+export const emailVerificationByLink = async (req, res, next) => {
+  const result = await emailVerificationByLinkService(req, next);
   res.status(200).json(result);
 };
 
-export const resetPasswordByLink = async (req, res) => {
-  const result = await resetPasswordByLinkService(req);
+export const emailVerificationByOtp = async (req, res, next) => {
+  const result = await emailVerificationByOtpService(req, next);
   res.status(200).json(result);
 };
 
-export const resetPasswordByOtp = async (req, res) => {
-  const result = await resetPasswordByOtpService(req);
+export const resetPasswordByLink = async (req, res, next) => {
+  const result = await resetPasswordByLinkService(req, next);
+  res.status(200).json(result);
+};
+
+export const resetPasswordByOtp = async (req, res, next) => {
+  const result = await resetPasswordByOtpService(req, next);
   res.status(200).json(result);
 };

@@ -4,7 +4,7 @@ dotenv.config();
 
 const EmailSend = async (EmailTo, EmailSubject, EmailText) => {
   const transporter = nodemailer.createTransport({
-    service: "Gmail", //Remove this in production
+    service: "Gmail",
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
     secure: true,

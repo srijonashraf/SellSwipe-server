@@ -1,5 +1,5 @@
 import BrandModel from "./../models/BrandModel.js";
-export const createModelService = async (req) => {
+export const createModelService = async (req, next) => {
   try {
     let BrandID = req.query.brandId;
     const data = await BrandModel.findOneAndUpdate(
@@ -13,11 +13,11 @@ export const createModelService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const updateModelService = async (req) => {
+export const updateModelService = async (req, next) => {
   try {
     let ModelID = req.query.modelId;
     const data = await BrandModel.findOneAndUpdate(
@@ -36,11 +36,11 @@ export const updateModelService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const deleteModelService = async (req) => {
+export const deleteModelService = async (req, next) => {
   try {
     let ModelID = req.query.modelId;
     const data = await BrandModel.findOneAndUpdate(
@@ -54,20 +54,22 @@ export const deleteModelService = async (req) => {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };
 
-export const listModelService = async (req) => {
+export const listModelService = async (req, next) => {
   try {
     let BrandID = req.query.brandId;
-    const data = await BrandModel.find({ _id: BrandID }).select("-_id brandName models");
+    const data = await BrandModel.find({ _id: BrandID }).select(
+      "-_id brandName models"
+    );
     if (!data) {
       return { status: "fail", message: "Failed to load Model list" };
     } else {
       return { status: "success", data: data };
     }
   } catch (error) {
-    return { status: "fail", data: error };
+    next(error);
   }
 };

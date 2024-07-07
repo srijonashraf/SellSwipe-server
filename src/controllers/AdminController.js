@@ -3,8 +3,10 @@ import {
   adminListService,
   adminLoginService,
   adminProfileDetailsService,
+  approveNidService,
   approvePostService,
   approvedPostListService,
+  declineNidService,
   declinePostService,
   declinedPostListService,
   deleteAdminService,
@@ -130,5 +132,15 @@ export const warningAccount = async (req, res, next) => {
 
 export const reviewNidList = async (req, res, next) => {
   const result = await reviewNidListService(req, next);
+  res.status(200).json(result);
+};
+
+export const approveNid = async (req, res, next) => {
+  const result = await approveNidService(req, next);
+  res.status(200).json(result);
+};
+
+export const declineNid = async (req, res, next) => {
+  const result = await declineNidService(req, next);
   res.status(200).json(result);
 };

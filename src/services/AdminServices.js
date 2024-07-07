@@ -8,6 +8,7 @@ import {
 } from "./../helper/TokenGeneratorHelper.js";
 import mongoose from "mongoose";
 import PostDetailsModel from "../models/PostDetailsModel.js";
+import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 
 export const adminLoginService = async (req, next) => {
   try {
@@ -83,6 +84,12 @@ export const adminProfileDetailsService = async (req, next) => {
 export const addNewAdminService = async (req, next) => {
   try {
     let reqBody = req.body;
+    const existingAdmin = await AdminModel.findOne({
+      email: reqBody.email,
+    }).exec();
+    if (existingAdmin) {
+      return { status: "fail", message: "Admin already exists" };
+    }
     const data = await AdminModel.create(reqBody);
     if (!data) {
       return { status: "fail", message: "Failed to add new admin" };
@@ -331,13 +338,15 @@ export const deletePostService = async (req, next) => {
 export const sendFeedbackService = async (req, next) => {
   try {
     const postID = req.query.postId;
-    const reqBody = req.body.feedback;
+    const reqBody = req.body;
+
+    inputSanitizer(reqBody);
 
     const data = await PostModel.findOneAndUpdate(
       { _id: postID },
       {
         $set: {
-          feedback: reqBody,
+          feedback: reqBody.feedback,
         },
       },
       { new: true }
@@ -472,6 +481,78 @@ export const reviewNidListService = async (req, next) => {
 
     return {
       status: "success",
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approveNidService = async (req, next) => {
+  try {
+    let userID = req.query.userId;
+    const data = await UserModel.findOneAndUpdate(
+      {
+        _id: userID,
+        nidSubmitted: true,
+        nidFront: { $exists: true, $ne: null },
+        nidBack: { $exists: true, $ne: null },
+      },
+      {
+        $set: {
+          nidVerified: true,
+        },
+      }
+    );
+
+    if (!data) {
+      return {
+        status: "fail",
+        message: "User or user's NID not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "NID request Approved",
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const declineNidService = async (req, next) => {
+  try {
+    let userID = req.query.userId;
+    const data = await UserModel.findOneAndUpdate(
+      {
+        _id: userID,
+        nidSubmitted: true,
+        nidFront: { $exists: true, $ne: null },
+        nidBack: { $exists: true, $ne: null },
+      },
+      {
+        $set: {
+          nidVerified: false,
+          nidSubmitted: false,
+          nidFront: "",
+          nidBack: "",
+        },
+      },
+      { new: true }
+    );
+
+    if (!data) {
+      return {
+        status: "fail",
+        message: "User or user's NID not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "NID request Declined",
       data: data,
     };
   } catch (error) {

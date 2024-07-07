@@ -12,15 +12,15 @@ const objectIdValidator = (value, helpers) => {
 export const adminSchemaCreate = Joi.object({
   email: Joi.string().email().lowercase().required(),
   name: Joi.string()
-    .pattern(/^[A-Za-z]+$/)
+    .pattern(/^[A-Za-z ]+$/)
     .required(),
   password: Joi.any().default(Joi.ref("email")).messages({
     "string.empty": "Please enter a password",
   }),
-  role: Joi.string().valid("Admin", "Super").required(),
+  role: Joi.string().valid("Admin", "SuperAdmin").required(),
   ref: Joi.object({
     name: Joi.string()
-      .pattern(/^[A-Za-z]+$/)
+      .pattern(/^[A-Za-z ]+$/)
       .required(),
     id: Joi.string().custom(objectIdValidator).required(),
   }),
@@ -34,11 +34,11 @@ export const adminSchemaCreate = Joi.object({
 // Joi schema for updating an admin
 export const adminSchemaUpdate = Joi.object({
   email: Joi.string().email().lowercase(),
-  name: Joi.string().pattern(/^[A-Za-z]+$/),
+  name: Joi.string().pattern(/^[A-Za-z ]+$/),
   password: Joi.string(),
-  role: Joi.string().valid("Admin", "Super"),
+  role: Joi.string().valid("Admin", "SuperAdmin"),
   ref: Joi.object({
-    name: Joi.string().pattern(/^[A-Za-z]+$/),
+    name: Joi.string().pattern(/^[A-Za-z ]+$/),
     id: Joi.string().custom(objectIdValidator),
   }),
   approvedPosts: Joi.array().items(Joi.string().custom(objectIdValidator)),

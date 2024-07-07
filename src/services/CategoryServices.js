@@ -1,7 +1,9 @@
+import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 import CategoryModel from "./../models/CategoryModel.js";
 export const createCategoryService = async (req, next) => {
   try {
     let reqBody = req.body;
+    inputSanitizer(reqBody);
     const data = await CategoryModel.create(reqBody);
     if (!data) {
       return { status: "fail", message: "Failed to save Category" };
@@ -15,10 +17,12 @@ export const createCategoryService = async (req, next) => {
 
 export const updateCategoryService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let CategoryID = req.query.categoryId;
     const data = await CategoryModel.findOneAndUpdate(
       { _id: CategoryID },
-      { $set: req.body },
+      { $set: reqBody },
       { new: true }
     );
     if (!data) {

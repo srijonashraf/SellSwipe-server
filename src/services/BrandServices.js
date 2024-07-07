@@ -1,7 +1,9 @@
+import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 import BrandModel from "./../models/BrandModel.js";
 export const createBrandService = async (req, next) => {
   try {
     let reqBody = req.body;
+    inputSanitizer(reqBody);
     const data = await BrandModel.create(reqBody);
     if (!data) {
       return { status: "fail", message: "Failed to save Brand" };
@@ -15,10 +17,12 @@ export const createBrandService = async (req, next) => {
 
 export const updateBrandService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let BrandID = req.query.brandId;
     const data = await BrandModel.findOneAndUpdate(
       { _id: BrandID },
-      { $set: req.body },
+      { $set: reqBody },
       { new: true }
     );
     if (!data) {

@@ -29,7 +29,7 @@ export const validateRequest = ({
 
     inputSanitizer(input);
 
-    // console.log(input); //To debug sanitize inputs
+    // console.log('⭐',input); //To debug sanitize inputs
 
     const validationResult = schema.validate(input, { abortEarly: false }); // Joi Validator (This will validate the request schema)
 

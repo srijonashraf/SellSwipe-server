@@ -2,12 +2,14 @@ import DivisionModel from "./../models/DivisionModel.js";
 import DistrictModel from "./../models/DistrictModel.js";
 import mongoose from "mongoose";
 import AreaModel from "./../models/AreaModel.js";
+import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 const ObjectID = mongoose.Types.ObjectId;
 
 //Division
 export const createDivisionService = async (req, next) => {
   try {
     let reqBody = req.body;
+    inputSanitizer(reqBody);
     const data = await DivisionModel.create(reqBody);
     if (!data) {
       return { status: "fail", message: "Failed to save Division" };
@@ -22,9 +24,11 @@ export const createDivisionService = async (req, next) => {
 export const updateDivisionService = async (req, next) => {
   try {
     let DivisionID = req.query.divisionId;
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     const data = await DivisionModel.findOneAndUpdate(
       { _id: DivisionID },
-      { $set: req.body },
+      { $set: reqBody },
       { new: true }
     );
     if (!data) {
@@ -67,8 +71,10 @@ export const listDivisionService = async (req, next) => {
 //District
 export const createDistrictService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let DivisionID = new ObjectID(req.query.divisionId);
-    const data = await DistrictModel.create(req.body);
+    const data = await DistrictModel.create(reqBody);
     data.divisionID = DivisionID;
     await data.save();
     if (!data) {
@@ -83,10 +89,12 @@ export const createDistrictService = async (req, next) => {
 
 export const updateDistrictService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let DistrictID = req.query.districtId;
     const data = await DistrictModel.findOneAndUpdate(
       { _id: DistrictID },
-      { $set: req.body },
+      { $set: reqBody },
       { new: true }
     );
     if (!data) {
@@ -133,8 +141,10 @@ export const listDistrictService = async (req, next) => {
 
 export const createAreaService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let DistrictID = new ObjectID(req.query.districtId);
-    const data = await AreaModel.create(req.body);
+    const data = await AreaModel.create(reqBody);
     data.districtID = DistrictID;
     await data.save();
     if (!data) {
@@ -184,10 +194,12 @@ export const createAreaService = async (req, next) => {
 
 export const updateAreaService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let AreaID = req.query.areaId;
     const data = await AreaModel.findOneAndUpdate(
       { _id: AreaID },
-      { $set: req.body },
+      { $set: reqBody },
       { new: true }
     );
     if (!data) {

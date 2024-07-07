@@ -1,10 +1,13 @@
+import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 import BrandModel from "./../models/BrandModel.js";
 export const createModelService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let BrandID = req.query.brandId;
     const data = await BrandModel.findOneAndUpdate(
       { _id: BrandID },
-      { $addToSet: { models: req.body } },
+      { $addToSet: { models: reqBody } },
       { new: true }
     );
     if (!data) {
@@ -19,13 +22,15 @@ export const createModelService = async (req, next) => {
 
 export const updateModelService = async (req, next) => {
   try {
+    let reqBody = req.body;
+    inputSanitizer(reqBody);
     let ModelID = req.query.modelId;
     const data = await BrandModel.findOneAndUpdate(
       { "models._id": ModelID },
       {
         $set: {
-          "models.$.modelName": req.body.modelName,
-          "models.$.modelImg": req.body.modelImg,
+          "models.$.modelName": reqBody.modelName,
+          "models.$.modelImg": reqBody.modelImg,
         },
       },
       { new: true }

@@ -31,7 +31,6 @@ export const uploadOnCloudinary = async (localFilePath) => {
 
 export const destroyOnCloudinary = async (pid) => {
   try {
-    console.log(pid)
     if (!pid) return null;
     const response = await cloudinary.uploader.destroy(pid, {
       invalidate: true,

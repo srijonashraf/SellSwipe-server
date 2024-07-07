@@ -25,11 +25,12 @@ import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 import { currentTime } from "./../constants/CurrectTime.js";
 import { baseUrl } from "../constants/BaseUrl.js";
 import { fetchLocation } from "./../helper/LocationHelper.js";
+import { removeUnusedLocalFile } from "./../helper/RemoveUnusedFilesHelper.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
 
-export const userRegistrationService = async (req) => {
+export const userRegistrationService = async (req, next) => {
   try {
     const reqBody = req.body;
     const userEmail = req.body.email;
@@ -42,22 +43,18 @@ export const userRegistrationService = async (req) => {
 
       await sendVerificationEmailService(req);
 
-      const newUserObj = newUser.toObject();
-      delete newUserObj.password;
-
       return {
         status: "success",
-        data: newUserObj,
+        data: newUser,
       };
     }
     return { status: "fail", message: "This account already exist" };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const userLoginService = async (req, res, next) => {
+export const userLoginService = async (req, next) => {
   try {
     const reqBody = req.body;
     const user = await UserModel.findOne({
@@ -123,32 +120,35 @@ export const userLoginService = async (req, res, next) => {
     }
     return { status: "fail", message: "Failed to login" };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const userAvatarUpdateService = async (req) => {
+export const userAvatarUpdateService = async (req, next) => {
+  let userAvatar = "";
   try {
     let userID = new ObjectID(req.headers.id);
     const filePath = req.file.path; //For single file
     if (!filePath) {
-      throw new Error("No files uploaded.");
+      return { status: "fail", message: "No file selected" };
     }
 
     //Upload on cloudinary
-    const userAvatar = await uploadOnCloudinary(filePath);
+    userAvatar = await uploadOnCloudinary(filePath);
     const response = await UserModel.findOne({ _id: userID }).exec();
+
     //At first delete the previous avatar
     if (response.avatar.pid) {
       await destroyOnCloudinary(response.avatar.pid);
     }
 
+    //Set the avatar details to response object
     response.avatar = {
       url: userAvatar.secure_url,
       pid: userAvatar.public_id,
     };
 
+    //Save object to database
     await response.save();
 
     if (!response) {
@@ -156,72 +156,98 @@ export const userAvatarUpdateService = async (req) => {
     }
     return { status: "success", cloudinary: userAvatar, data: response };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    removeUnusedLocalFile(req.file.path);
+    destroyOnCloudinary(userAvatar.public_id);
+    next(error);
   }
 };
 
-export const userNidUpdateRequestService = async (req) => {
+const cleanupLocalFiles = (files) => {
+  if (files && files.nidFront) {
+    for (const file of files.nidFront) {
+      removeUnusedLocalFile(file.path);
+    }
+  }
+  if (files && files.nidBack) {
+    for (const file of files.nidBack) {
+      removeUnusedLocalFile(file.path);
+    }
+  }
+};
+
+const cleanupCloudinaryFiles = async (responses) => {
+  if (responses.nidFrontResponse) {
+    await destroyOnCloudinary(responses.nidFrontResponse.public_id);
+  }
+  if (responses.nidBackResponse) {
+    await destroyOnCloudinary(responses.nidBackResponse.public_id);
+  }
+};
+
+const deleteExistingFiles = async (user) => {
+  if (user.nidFront && user.nidFront.pid) {
+    await destroyOnCloudinary(user.nidFront.pid);
+  }
+  if (user.nidBack && user.nidBack.pid) {
+    await destroyOnCloudinary(user.nidBack.pid);
+  }
+};
+
+export const userNidUpdateRequestService = async (req, next) => {
+  const responses = {};
   try {
     let userID = new ObjectID(req.headers.id);
     const filePaths = req.files;
-    if (!filePaths) {
-      throw new Error("No files uploaded.");
-    }
-    const { nidFront, nidBack } = filePaths;
 
+    if (!filePaths) {
+      return { status: "fail", message: "No file uploaded" };
+    }
+
+    const { nidFront, nidBack } = filePaths;
     if (!nidFront || !nidBack) {
-      throw new Error("File missing.");
+      return { status: "fail", message: "File missing" };
     }
 
     const user = await UserModel.findOne({ _id: userID }).exec();
+    if (!user) {
+      return { status: "fail", message: "User not found." };
+    }
+
     if (user.nidSubmitted) {
+      cleanupLocalFiles(req.files);
       return {
         status: "fail",
         message: "An approval request is pending already.",
       };
     }
 
-    //Todo: User can select any images of NID and can delete that
-    //Delete Existing File
-    if (user.nidFront && user.nidFront.pid) {
-      await destroyOnCloudinary(user.nidFront.pid);
-    }
-    if (user.nidBack && user.nidBack.pid) {
-      await destroyOnCloudinary(user.nidBack.pid);
-    }
+    await deleteExistingFiles(user);
 
-    //Upload on Cloudinary
-    const nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
-    const nidBackResponse = await uploadOnCloudinary(nidBack[0].path);
+    responses.nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
+    responses.nidBackResponse = await uploadOnCloudinary(nidBack[0].path);
 
-    if (!user) {
-      return { status: "fail", message: "User not found." };
-    }
-
-    //Save new file links
     user.nidFront = {
-      url: nidFrontResponse.secure_url,
-      pid: nidFrontResponse.public_id,
+      url: responses.nidFrontResponse.secure_url,
+      pid: responses.nidFrontResponse.public_id,
     };
 
     user.nidBack = {
-      url: nidBackResponse.secure_url,
-      pid: nidBackResponse.public_id,
+      url: responses.nidBackResponse.secure_url,
+      pid: responses.nidBackResponse.public_id,
     };
 
     user.nidSubmitted = true;
-
     await user.save();
 
     return { status: "success", data: user };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    cleanupLocalFiles(req.files);
+    await cleanupCloudinaryFiles(responses);
+    next(error);
   }
 };
 
-export const userProfileUpdateService = async (req) => {
+export const userProfileUpdateService = async (req, next) => {
   try {
     let id = req.headers.id;
     let role = req.headers.role;
@@ -241,11 +267,10 @@ export const userProfileUpdateService = async (req) => {
       data: response,
     };
   } catch (error) {
-    console.log(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
-export const userProfileDetailsService = async (req) => {
+export const userProfileDetailsService = async (req, next) => {
   try {
     let userID = new ObjectID(req.headers.id);
     const user = await UserModel.findOne({ _id: userID }).select(
@@ -256,12 +281,11 @@ export const userProfileDetailsService = async (req) => {
     }
     return { status: "success", data: user };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const userAllSessionService = async (req, res) => {
+export const userAllSessionService = async (req, next) => {
   try {
     let userID = new ObjectID(req.headers.id);
     const user = await UserModel.findOne({ _id: userID }).populate(
@@ -275,12 +299,11 @@ export const userAllSessionService = async (req, res) => {
 
     return { status: "success", data: user.sessionId };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const userLogoutFromSessionService = async (req, res) => {
+export const userLogoutFromSessionService = async (req, next) => {
   try {
     const sessionID = req.query.sessionId;
 
@@ -330,7 +353,7 @@ export const userLogoutFromSessionService = async (req, res) => {
   }
 };
 
-export const sendVerificationEmailService = async (req) => {
+export const sendVerificationEmailService = async (req, next) => {
   try {
     const input = req.body;
 
@@ -398,12 +421,11 @@ export const sendVerificationEmailService = async (req) => {
       message: "A verification email sent successfully! Check your mailbox.",
     };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const sendResetPasswordEmailService = async (req) => {
+export const sendResetPasswordEmailService = async (req, next) => {
   try {
     //If from UserRegistration then get the input from body and if from ResetPassword then from query
     const input = req.query;
@@ -470,12 +492,11 @@ export const sendResetPasswordEmailService = async (req) => {
       message: "A verification email sent successfully! Check your mailbox.",
     };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const emailVerificationByLinkService = async (req) => {
+export const emailVerificationByLinkService = async (req, next) => {
   try {
     const requestQueryParams = req.query;
 
@@ -525,12 +546,11 @@ export const emailVerificationByLinkService = async (req) => {
 
     return { status: "success", message: "Email verified successfully" };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const emailVerificationByOtpService = async (req) => {
+export const emailVerificationByOtpService = async (req, next) => {
   try {
     const requestQueryParams = req.query;
     inputSanitizer(requestQueryParams);
@@ -571,12 +591,11 @@ export const emailVerificationByOtpService = async (req) => {
 
     return { status: "success", message: "OTP verified successfully" };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const resetPasswordByLinkService = async (req) => {
+export const resetPasswordByLinkService = async (req, next) => {
   try {
     const requestQueryParam = req.query;
     const requestBody = req.body;
@@ -632,12 +651,11 @@ export const resetPasswordByLinkService = async (req) => {
 
     return { status: "success", message: "Password changed successfully" };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };
 
-export const resetPasswordByOtpService = async (req, res) => {
+export const resetPasswordByOtpService = async (req, next) => {
   try {
     const requestBody = req.body;
     inputSanitizer(requestBody);
@@ -713,7 +731,6 @@ export const resetPasswordByOtpService = async (req, res) => {
 
     return { status: "success", message: "Password reset successfully" };
   } catch (error) {
-    console.error(error);
-    return { status: "fail", message: "Something went wrong" };
+    next(error);
   }
 };

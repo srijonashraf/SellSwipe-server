@@ -26,6 +26,7 @@ import { currentTime } from "./../constants/CurrectTime.js";
 import { baseUrl } from "../constants/BaseUrl.js";
 import { fetchLocation } from "./../helper/LocationHelper.js";
 import { removeUnusedLocalFile } from "./../helper/RemoveUnusedFilesHelper.js";
+import PostModel from "../models/PostModel.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -735,3 +736,44 @@ export const resetPasswordByOtpService = async (req, next) => {
   }
 };
 
+export const reportPostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.query.postId);
+    const reqBody = req.body;
+
+    inputSanitizer(reqBody);
+
+    const { reportCause } = reqBody;
+
+    const reportResponse = await PostModel.findOneAndUpdate(
+      {
+        _id: postID,
+        "reportPost.reportedBy": { $nin: [new ObjectID(req.headers.id)] },
+      },
+      {
+        $addToSet: {
+          reportPost: {
+            reportedBy: new ObjectID(req.headers.id),
+            causeOfReport: reportCause,
+          },
+        },
+        $inc: { reportCount: 1 },
+      },
+      { new: true }
+    );
+
+    if (!reportResponse) {
+      return {
+        stutus: "fail",
+        message: "A report is already pending or failed to report the post",
+      };
+    }
+    return {
+      status: "success",
+      message: "Report has been submitted successfully.",
+    };
+  } catch (error) {
+    console.log("Error caught:", error);
+    next(error);
+  }
+};

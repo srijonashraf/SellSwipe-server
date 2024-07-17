@@ -92,4 +92,10 @@ protectedRouter.get(
   PostController.DeletePostImage
 );
 
+protectedRouter.post(
+  "/reportPost",
+  AuthVerifyMiddlware,
+  UserController.reportPost
+);
+
 export default protectedRouter;

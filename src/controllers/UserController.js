@@ -1,6 +1,7 @@
 import {
   emailVerificationByLinkService,
   emailVerificationByOtpService,
+  reportPostService,
   resetPasswordByLinkService,
   resetPasswordByOtpService,
   sendResetPasswordEmailService,
@@ -88,5 +89,10 @@ export const resetPasswordByLink = async (req, res, next) => {
 
 export const resetPasswordByOtp = async (req, res, next) => {
   const result = await resetPasswordByOtpService(req, next);
+  res.status(200).json(result);
+};
+
+export const reportPost = async (req, res, next) => {
+  const result = await reportPostService(req, next);
   res.status(200).json(result);
 };

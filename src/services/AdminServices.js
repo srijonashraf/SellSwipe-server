@@ -178,7 +178,7 @@ export const declinedPostListService = async (req, next) => {
 
 export const reportedPostListService = async (req, next) => {
   try {
-    const data = await PostModel.find({ reportAdmin: true });
+    const data = await PostModel.find({ reportCount: { $gte: 1 } });
     if (!data) {
       return { status: "fail", message: "Failed to load reported post list" };
     }
@@ -267,7 +267,8 @@ export const declinePostService = async (req, next) => {
           onReview: false,
           approvedBy: "",
           isDeclined: true,
-          declinedBy: { id: id, name: name },
+          "declinedBy.adminId": id,
+          "declinedBy.adminName": name,
         },
       },
       { new: true }
@@ -345,8 +346,11 @@ export const sendFeedbackService = async (req, next) => {
     const data = await PostModel.findOneAndUpdate(
       { _id: postID },
       {
-        $set: {
-          feedback: reqBody.feedback,
+        $addToSet: {
+          feedback: {
+            adminId: req.headers.id,
+            adminComment: reqBody.feedback,
+          },
         },
       },
       { new: true }

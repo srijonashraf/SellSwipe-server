@@ -45,29 +45,38 @@ const PostSchema = mongoose.Schema(
       type: Object,
     },
     isDeclined: {
-      type: Boolean,
-      default: false,
-    },
-    declinedBy: {
-      type: Object,
+      adminId: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      adminName: {
+        type: String,
+      },
     },
     isActive: {
       type: Boolean,
       default: true,
     },
     isDeleted: {
-      type: String,
+      type: Boolean,
     },
     editCount: {
       type: Number,
       default: 0,
     },
-    reportAdmin: {
-      type: Boolean,
+    reportCount: {
+      type: Number,
+      default: 0,
     },
-    reportedBy: {
-      type: String,
-    },
+    reportPost: [
+      {
+        reportedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+        },
+        causeOfReport: {
+          type: String,
+        },
+      },
+    ],
     viewsCount: {
       type: String,
     },
@@ -87,9 +96,16 @@ const PostSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    feedback: {
-      type: String,
-    },
+    feedback: [
+      {
+        adminId: {
+          type: mongoose.Schema.Types.ObjectId,
+        },
+        adminComment: {
+          type: String,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

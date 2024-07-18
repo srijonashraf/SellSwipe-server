@@ -1,6 +1,10 @@
 import {
+  activePostService,
   emailVerificationByLinkService,
   emailVerificationByOtpService,
+  favouritePostListService,
+  favouritePostService,
+  inactivePostService,
   reportPostService,
   resetPasswordByLinkService,
   resetPasswordByOtpService,
@@ -94,5 +98,25 @@ export const resetPasswordByOtp = async (req, res, next) => {
 
 export const reportPost = async (req, res, next) => {
   const result = await reportPostService(req, next);
+  res.status(200).json(result);
+};
+
+export const favouritePost = async (req, res, next) => {
+  const result = await favouritePostService(req, next);
+  res.status(200).json(result);
+};
+
+export const favouritePostList = async (req, res, next) => {
+  const result = await favouritePostListService(req, next);
+  res.status(200).json(result);
+};
+
+export const activePost = async (req, res, next) => {
+  const result = await activePostService(req, next);
+  res.status(200).json(result);
+};
+
+export const inactivePost = async (req, res, next) => {
+  const result = await inactivePostService(req, next);
   res.status(200).json(result);
 };

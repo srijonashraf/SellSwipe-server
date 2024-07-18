@@ -27,6 +27,7 @@ import { baseUrl } from "../constants/BaseUrl.js";
 import { fetchLocation } from "./../helper/LocationHelper.js";
 import { removeUnusedLocalFile } from "./../helper/RemoveUnusedFilesHelper.js";
 import PostModel from "../models/PostModel.js";
+import FavouriteModel from "../models/FavouriteModel.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -773,7 +774,110 @@ export const reportPostService = async (req, next) => {
       message: "Report has been submitted successfully.",
     };
   } catch (error) {
-    console.log("Error caught:", error);
+    next(error);
+  }
+};
+
+export const favouritePostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.query.postId);
+    const userID = new ObjectID(req.headers.id);
+
+    const favouriteResponse = await FavouriteModel.findOneAndUpdate(
+      { postID, userID },
+      {
+        $set: { postID, userID },
+      },
+      {
+        new: true,
+        upsert: true,
+      }
+    );
+
+    if (!favouriteResponse) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "Post added to favourite",
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const favouritePostListService = async (req, next) => {
+  try {
+    const result = await FavouriteModel.find({ userID: req.headers.id });
+
+    if (!result) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      data: result,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const activePostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.query.postId);
+    const userID = new ObjectID(req.headers.id);
+
+    const result = await PostModel.findOneAndUpdate(
+      { _id: postID, userID: userID },
+      { $set: { isActive: true } }
+    );
+
+    if (!result) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "Your post is now active",
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const inactivePostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.query.postId);
+    const userID = new ObjectID(req.headers.id);
+
+    const result = await PostModel.findOneAndUpdate(
+      { _id: postID, userID: userID },
+      { $set: { isActive: false } }
+    );
+
+    if (!result) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "Your post is now inactive",
+    };
+  } catch (error) {
     next(error);
   }
 };

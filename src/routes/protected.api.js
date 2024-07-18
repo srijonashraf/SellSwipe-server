@@ -94,8 +94,36 @@ protectedRouter.get(
 
 protectedRouter.post(
   "/reportPost",
+  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.reportPost
+);
+
+protectedRouter.post(
+  "/favouritePost",
+  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
+  AuthVerifyMiddlware,
+  UserController.favouritePost
+);
+
+protectedRouter.get(
+  "/favouritePostList",
+  AuthVerifyMiddlware,
+  UserController.favouritePostList
+);
+
+protectedRouter.get(
+  "/activePost",
+  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
+  AuthVerifyMiddlware,
+  UserController.activePost
+);
+
+protectedRouter.get(
+  "/inactivePost",
+  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
+  AuthVerifyMiddlware,
+  UserController.inactivePost
 );
 
 export default protectedRouter;

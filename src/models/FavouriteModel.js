@@ -5,7 +5,7 @@ const FavouriteSchema = mongoose.Schema(
     postID: {
       type: mongoose.Schema.Types.ObjectId,
     },
-    userId: {
+    userID: {
       type: mongoose.Schema.Types.ObjectId,
     },
   },

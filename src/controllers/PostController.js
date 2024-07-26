@@ -1,38 +1,49 @@
 import {
   createPostService,
-  deletePostImages,
+  deletePostImagesService,
   deletePostService,
+  pendingPostByUserService,
   postByUserService,
+  postListByFilterService,
   postListService,
   updatePostService,
 } from "./../services/PostServices.js";
 
-export const PostByUser = async (req, res, next) => {
+export const postByUser = async (req, res, next) => {
   let result = await postByUserService(req, next);
   return res.status(200).json(result);
 };
+export const pendingPostByUser = async (req, res, next) => {
+  let result = await pendingPostByUserService(req, next);
+  return res.status(200).json(result);
+};
 
-export const CreatePost = async (req, res, next) => {
+export const createPost = async (req, res, next) => {
   let result = await createPostService(req, next);
   return res.status(200).json(result);
 };
 
-export const UpdatePost = async (req, res, next) => {
+export const updatePost = async (req, res, next) => {
   let result = await updatePostService(req, next);
   return res.status(200).json(result);
 };
 
-export const DeletePost = async (req, res, next) => {
+export const deletePost = async (req, res, next) => {
   let result = await deletePostService(req, next);
   return res.status(200).json(result);
 };
 
-export const DeletePostImage = async (req, res, next) => {
-  let result = await deletePostImages(req, next);
+export const deletePostImages = async (req, res, next) => {
+  let result = await deletePostImagesService(req, next);
   return res.status(200).json(result);
 };
 
-export const PostList = async (req, res, next) => {
+export const postList = async (req, res, next) => {
   let result = await postListService(req, next);
+  return res.status(200).json(result);
+};
+
+export const postListByFilter = async (req, res, next) => {
+  let result = await postListByFilterService(req, next);
   return res.status(200).json(result);
 };

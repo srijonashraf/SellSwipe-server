@@ -7,13 +7,39 @@ import {
 import PostDetailsModel from "./../models/PostDetailsModel.js";
 import mapData from "../utility/CreatePost/MapData.js";
 import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
+import { inputSanitizer } from "./../middlewares/RequestValidateMiddleware.js";
 
 const ObjectID = mongoose.Types.ObjectId;
 
 export const postByUserService = async (req, next) => {
   try {
     const userId = req.headers.id;
-    const posts = await PostModel.find({ userID: userId });
+    const posts = await PostModel.find({
+      userID: userId,
+      onReview: false,
+      isApproved: true,
+      isDeleted: false,
+    });
+
+    if (posts.length === 0) {
+      return { status: "success", message: "No post found" };
+    }
+
+    return { status: "success", data: posts };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const pendingPostByUserService = async (req, next) => {
+  try {
+    const userId = req.headers.id;
+    const posts = await PostModel.find({
+      userID: userId,
+      onReview: true,
+      isApproved: false,
+      isDeleted: false,
+    });
 
     if (posts.length === 0) {
       return { status: "success", message: "No post found" };
@@ -247,7 +273,7 @@ export const deletePostService = async (req, next) => {
   }
 };
 
-export const deletePostImages = async (req, next) => {
+export const deletePostImagesService = async (req, next) => {
   try {
     const postID = new ObjectID(req.query.postId);
     const pid = req.query.pid;
@@ -334,10 +360,12 @@ export const postListService = async (req, next) => {
         $match: {
           isApproved: true,
           isActive: true,
+          isDeleted: false,
           onReview: false,
           isDeclined: false,
         },
       },
+      { $sort: { createdAt: -1 } },
       {
         $lookup: {
           from: "users",
@@ -383,6 +411,103 @@ export const postListService = async (req, next) => {
     ]);
 
     return { status: "success", data: data };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const postListByFilterService = async (req, next) => {
+  try {
+    /* req.body should receive an object containing the 
+    fields (not mandatory to have values in the fields)..
+    
+    {
+    "division": "",
+    "district": "",
+    "area": "66282c9fea9e63ce21b4f83b",
+    "minPrice": 100,
+    "maxPrice": 1000
+    }
+    
+    */
+    const reqBody = req.body;
+    inputSanitizer(reqBody);
+    const { division, district, area, minPrice, maxPrice } = reqBody;
+
+    const query = {
+      isApproved: true,
+      isActive: true,
+      onReview: false,
+      isDeclined: false,
+      isDeleted: false,
+    };
+
+    if (division) query.divisionID = new ObjectID(division);
+    if (district) query.districtID = new ObjectID(district);
+    if (area) query.areaID = new ObjectID(area);
+    if (minPrice !== undefined)
+      query.price = { ...query.price, $gte: minPrice };
+    if (maxPrice !== undefined)
+      query.price = { ...query.price, $lte: maxPrice };
+
+    console.log(query);
+
+    const data = await PostModel.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userID",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $match: {
+          "user.accountStatus": { $in: ["Validate", "Warning"] },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          user: {
+            _id: "$user._id",
+            name: "$user.name",
+            email: "$user.email",
+            phone: "$user.phone",
+          },
+          title: 1,
+          mainImg: 1,
+          price: 1,
+          discount: 1,
+          discountPrice: 1,
+          stock: 1,
+          isActive: 1,
+          editCount: 1,
+          viewsCount: 1,
+          divisionID: 1,
+          districtID: 1,
+          areaID: 1,
+          address: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
+
+    if (!data) {
+      return { status: "fail", data: [] };
+    }
+
+    return { status: "success", total: data.length, data: data };
   } catch (error) {
     next(error);
   }

@@ -42,9 +42,18 @@ const PostSchema = mongoose.Schema(
       default: false,
     },
     approvedBy: {
-      type: Object,
+      adminId: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      adminName: {
+        type: String,
+      },
     },
     isDeclined: {
+      type: Boolean,
+      default: false,
+    },
+    declinedBy: {
       adminId: {
         type: mongoose.Schema.Types.ObjectId,
       },
@@ -58,6 +67,7 @@ const PostSchema = mongoose.Schema(
     },
     isDeleted: {
       type: Boolean,
+      default: false,
     },
     editCount: {
       type: Number,
@@ -67,9 +77,9 @@ const PostSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
-    reportPost: [
+    reportedBy: [
       {
-        reportedBy: {
+        userId: {
           type: mongoose.Schema.Types.ObjectId,
         },
         causeOfReport: {

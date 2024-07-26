@@ -753,8 +753,8 @@ export const reportPostService = async (req, next) => {
       },
       {
         $addToSet: {
-          reportPost: {
-            reportedBy: new ObjectID(req.headers.id),
+          reportedBy: {
+            userId: new ObjectID(req.headers.id),
             causeOfReport: reportCause,
           },
         },

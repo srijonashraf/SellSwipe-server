@@ -59,7 +59,13 @@ protectedRouter.get(
 protectedRouter.get(
   "/postByUser",
   AuthVerifyMiddlware,
-  PostController.PostByUser
+  PostController.postByUser
+);
+
+protectedRouter.get(
+  "/pendingPostByUser",
+  AuthVerifyMiddlware,
+  PostController.pendingPostByUser
 );
 
 protectedRouter.post(
@@ -68,7 +74,7 @@ protectedRouter.post(
   validateRequest({ schema: postSchemaCreate, isQuery: false, isParam: false }),
   AuthVerifyMiddlware,
   PrePostValidation,
-  PostController.CreatePost
+  PostController.createPost
 );
 
 protectedRouter.post(
@@ -76,20 +82,20 @@ protectedRouter.post(
   upload.array("images", 5),
   validateRequest({ schema: postSchemaUpdate, isQuery: false, isParam: false }),
   AuthVerifyMiddlware,
-  PostController.UpdatePost
+  PostController.updatePost
 );
 
 protectedRouter.get(
   "/deletePost",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
-  PostController.DeletePost
+  PostController.deletePost
 );
 
 protectedRouter.get(
   "/deletePostImage",
   AuthVerifyMiddlware,
-  PostController.DeletePostImage
+  PostController.deletePostImages
 );
 
 protectedRouter.post(

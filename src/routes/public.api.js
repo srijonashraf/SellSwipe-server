@@ -20,7 +20,8 @@ publicRouter.get("/listModel", ModelController.listModel);
 publicRouter.get("/listDivision", LocationController.listDivision);
 publicRouter.get("/listDistrict", LocationController.listDistrict);
 publicRouter.get("/listArea", LocationController.listArea);
-publicRouter.get("/postList", PostController.PostList);
+publicRouter.get("/postList", PostController.postList);
+publicRouter.get("/postListByFilter", PostController.postListByFilter);
 
 publicRouter.post(
   "/registration",

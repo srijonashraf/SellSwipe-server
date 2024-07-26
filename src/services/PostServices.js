@@ -428,7 +428,7 @@ export const postListByFilterService = async (req, next) => {
     "minPrice": 100,
     "maxPrice": 1000
     }
-    
+
     */
     const reqBody = req.body;
     inputSanitizer(reqBody);
@@ -450,7 +450,7 @@ export const postListByFilterService = async (req, next) => {
     if (maxPrice !== undefined)
       query.price = { ...query.price, $lte: maxPrice };
 
-    console.log(query);
+    //Todo: Handle discountPrice field match
 
     const data = await PostModel.aggregate([
       {

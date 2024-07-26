@@ -71,6 +71,14 @@ adminRouter.get(
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.reviewPostList
 );
+
+adminRouter.get(
+  "/reviewPostIdList",
+  AuthVerifyMiddlware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  AdminController.reviewPostListIdOnly
+);
+
 adminRouter.get(
   "/approvedPostList",
   AuthVerifyMiddlware,
@@ -102,22 +110,12 @@ adminRouter.get(
 );
 adminRouter.get(
   "/approvePost",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
   AuthVerifyMiddlware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.approvePost
 );
 adminRouter.get(
   "/declinePost",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
   AuthVerifyMiddlware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.declinePost
@@ -409,5 +407,7 @@ adminRouter.get(
   roleAuthentication("SuperAdmin"),
   LocationController.deleteArea
 );
+
+
 
 export default adminRouter;

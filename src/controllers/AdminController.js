@@ -15,6 +15,7 @@ import {
   restrictAccountService,
   restrictedAccountListService,
   reviewNidListService,
+  reviewPostListIdOnlyService,
   reviewPostListService,
   sendFeedbackService,
   userListService,
@@ -142,5 +143,10 @@ export const approveNid = async (req, res, next) => {
 
 export const declineNid = async (req, res, next) => {
   const result = await declineNidService(req, next);
+  res.status(200).json(result);
+};
+
+export const reviewPostListIdOnly = async (req, res, next) => {
+  const result = await reviewPostListIdOnlyService(req, next);
   res.status(200).json(result);
 };

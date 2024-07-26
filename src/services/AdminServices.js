@@ -9,6 +9,7 @@ import {
 import mongoose from "mongoose";
 import PostDetailsModel from "../models/PostDetailsModel.js";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
+const ObjectID = mongoose.Types.ObjectId;
 
 export const adminLoginService = async (req, next) => {
   try {
@@ -152,9 +153,14 @@ export const reviewPostListService = async (req, next) => {
   }
 };
 
+/*Admin will only show those post which he approved*/
 export const approvedPostListService = async (req, next) => {
   try {
-    const data = await PostModel.find({ isApproved: true, onReview: false });
+    const data = await PostModel.find({
+      isApproved: true,
+      onReview: false,
+      "approvedBy.adminId": req.headers.id,
+    });
     if (!data) {
       return { status: "fail", message: "Failed to load approve post list" };
     }
@@ -164,9 +170,13 @@ export const approvedPostListService = async (req, next) => {
   }
 };
 
+/*Admin will only show those post which he declined*/
 export const declinedPostListService = async (req, next) => {
   try {
-    const data = await PostModel.find({ isDeclined: true });
+    const data = await PostModel.find({
+      isDeclined: true,
+      "declinedBy.adminId": req.headers.id,
+    });
     if (!data) {
       return { status: "fail", message: "Failed to load declined post list" };
     }
@@ -209,41 +219,53 @@ export const withdrawReportService = async (req, next) => {
 
 export const approvePostService = async (req, next) => {
   try {
-    const postID = req.query.postId;
+    /*req.body should receive an array like this [{
+    "postId": [
+        "66a3de66e505fd46ea7c2435",
+        "66a3de66e505fd46ea7c2435"
+    ]
+
+    or
+
+    "postId": [
+        "66a3de66e505fd46ea7c2435"
+    ]
+      */
+
+    const postId = req.body.postId;
     const { id, name } = req.headers;
+    inputSanitizer(postId);
 
-    if (!id || !name) {
-      return { status: "fail", message: "Missing user information in headers" };
-    }
-
-    const data = await PostModel.findOneAndUpdate(
-      { _id: postID },
+    const data = await PostModel.updateMany(
+      { _id: { $in: postId } },
       {
         $set: {
           isDeclined: false,
           onReview: false,
           declinedBy: "",
           isApproved: true,
-          approvedBy: { id: id, name: name },
+          "approvedBy.adminId": id,
+          "approvedBy.adminName": name,
         },
-      },
-      { new: true }
+      }
     );
 
-    if (!data) {
+    if (data.modifiedCount === 0) {
       return { status: "fail", message: "Failed to approve post" };
     }
 
     const adminResponse = await AdminModel.findOneAndUpdate(
-      { _id: req.headers.id },
-      { $addToSet: { approvedPosts: postID } }
+      { _id: id },
+      { $addToSet: { approvedPosts: { $each: postId } } }
     );
+
     if (!adminResponse) {
       return {
         status: "fail",
-        message: "Failed to decline post, check admin model",
+        message: "Failed to update admin model with approved posts",
       };
     }
+
     return { status: "success", data: data };
   } catch (error) {
     next(error);
@@ -252,15 +274,26 @@ export const approvePostService = async (req, next) => {
 
 export const declinePostService = async (req, next) => {
   try {
-    const postID = req.query.postId;
+    /*req.body should receive an array like this [{
+    "postId": [
+        "66a3de66e505fd46ea7c2435",
+        "66a3de66e505fd46ea7c2435"
+    ]
+
+    or
+
+    "postId": [
+        "66a3de66e505fd46ea7c2435"
+    ]
+      */
+
+    const postId = req.body.postId;
     const { id, name } = req.headers;
 
-    if (!id || !name) {
-      return { status: "fail", message: "Missing user information in headers" };
-    }
+    inputSanitizer(postId);
 
-    const data = await PostModel.findOneAndUpdate(
-      { _id: postID },
+    const data = await PostModel.updateMany(
+      { _id: { $in: postId } },
       {
         $set: {
           isApproved: false,
@@ -270,22 +303,22 @@ export const declinePostService = async (req, next) => {
           "declinedBy.adminId": id,
           "declinedBy.adminName": name,
         },
-      },
-      { new: true }
+      }
     );
 
-    if (!data) {
+    if (data.modifiedCount === 0) {
       return { status: "fail", message: "Failed to decline post" };
     }
 
     const adminResponse = await AdminModel.findOneAndUpdate(
-      { _id: req.headers.id },
-      { $addToSet: { declinedPosts: postID } }
+      { _id: id },
+      { $addToSet: { declinedPosts: { $each: postId } } }
     );
+
     if (!adminResponse) {
       return {
         status: "fail",
-        message: "Failed to decline post, check admin model",
+        message: "Failed to update admin model with decline posts",
       };
     }
 
@@ -559,6 +592,29 @@ export const declineNidService = async (req, next) => {
       message: "NID request Declined",
       data: data,
     };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reviewPostListIdOnlyService = async (req, next) => {
+  try {
+    const data = await PostModel.aggregate([
+      {
+        $match: { onReview: true, isApproved: false },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          _id: 1,
+        },
+      },
+    ]);
+    if (!data) {
+      return { status: "fail", message: "Failed to load review post list" };
+    }
+    const ids = data.map(item => item._id.toString());
+    return { status: "success", total: ids.length, data: { id: ids } };
   } catch (error) {
     next(error);
   }

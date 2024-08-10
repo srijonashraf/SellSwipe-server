@@ -14,6 +14,8 @@ export const adminSchemaCreate = Joi.object({
   name: Joi.string()
     .pattern(/^[A-Za-z ]+$/)
     .required(),
+
+  //Default admin password is there email address
   password: Joi.any().default(Joi.ref("email")).messages({
     "string.empty": "Please enter a password",
   }),

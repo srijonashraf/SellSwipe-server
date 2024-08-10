@@ -13,12 +13,14 @@ const objectIdValidator = (value, helpers) => {
 export const postSchemaCreate = Joi.object().keys({
   title: Joi.string().required(),
   price: Joi.number().required(),
-  discount: Joi.boolean(),
-  discountPrice: Joi.number().when("discount", {
-    is: true,
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
+  discount: Joi.boolean().required(),
+  discountPrice: Joi.number()
+    .when("discount", {
+      is: true,
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    })
+    .less(Joi.ref("price")),
   stock: Joi.string().required(),
   otherPhone: Joi.string().required(),
   onReview: Joi.boolean().default(true),
@@ -53,12 +55,14 @@ export const postSchemaCreate = Joi.object().keys({
 export const postSchemaUpdate = Joi.object().keys({
   title: Joi.string().required(),
   price: Joi.number().required(),
-  discount: Joi.boolean(),
-  discountPrice: Joi.number().when("discount", {
-    is: true,
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
+  discount: Joi.boolean().required(),
+  discountPrice: Joi.number()
+    .when("discount", {
+      is: true,
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    })
+    .less(Joi.ref("price")),
   stock: Joi.string().required(),
   otherPhone: Joi.string().required(),
   onReview: Joi.boolean().default(true),

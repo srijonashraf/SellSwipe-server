@@ -1,3 +1,4 @@
+import { errorCodes } from "../constants/ErrorCodes.js";
 import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
 import UserModel from "../models/UserModel.js";
 
@@ -12,8 +13,8 @@ export const PrePostValidation = async (req, res, next) => {
     if (!user) {
       return res.status(200).json({
         status: "fail",
-        code: 3,
-        message: "No account associated with this email",
+        code: errorCodes.NOT_FOUND.code,
+        message: errorCodes.NOT_FOUND.message,
       });
     }
 
@@ -25,8 +26,8 @@ export const PrePostValidation = async (req, res, next) => {
       }
       return res.status(200).json({
         status: "fail",
-        code: 9,
-        message: "Nid is not verified, You can not post any ad",
+        code: errorCodes.NID_NOT_VERIFIED.code,
+        message: errorCodes.NID_NOT_VERIFIED.message,
       });
     }
 
@@ -38,8 +39,8 @@ export const PrePostValidation = async (req, res, next) => {
       }
       return res.status(200).json({
         status: "fail",
-        code: 8,
-        message: "Your account status is not validate, You can not post.",
+        code: errorCodes.ACCOUNT_IS_NOT_VAlID.code,
+        message: errorCodes.ACCOUNT_IS_NOT_VAlID.message,
       });
     }
 

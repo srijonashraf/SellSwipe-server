@@ -1,3 +1,4 @@
+import { errorCodes } from "../constants/ErrorCodes.js";
 import UserModel from "../models/UserModel.js";
 
 export const preLoginValidation = async (req, res, next) => {
@@ -10,24 +11,24 @@ export const preLoginValidation = async (req, res, next) => {
     if (!user) {
       return res.status(200).json({
         status: "fail",
-        code: 3,
-        message: "No account associated with this email",
+        code: errorCodes.NOT_FOUND.code,
+        message: errorCodes.NOT_FOUND.message,
       });
     }
 
     if (user.accountStatus === "Restricted") {
       return res.status(200).json({
         status: "fail",
-        code: 5,
-        message: "Your account has been restricted.",
+        code: errorCodes.ACCOUNT_RESTRICTED_ERROR.code,
+        message: errorCodes.ACCOUNT_RESTRICTED_ERROR.message,
       });
     }
 
     if (!user.emailVerified) {
       return res.status(200).json({
         status: "fail",
-        code: 6,
-        message: "Email is not verified, redirect to OTP page",
+        code: errorCodes.EMAIL_NOT_VERIFIED.code,
+        message: errorCodes.EMAIL_NOT_VERIFIED.message,
       });
     }
 
@@ -43,9 +44,8 @@ export const preLoginValidation = async (req, res, next) => {
       if (user.limitedLogin && user.limitedLogin > Date.now()) {
         return res.status(200).json({
           status: "fail",
-          code: 6,
-          message:
-            "Failed to log in, maximum login attempt exceeded. Try again later",
+          code: errorCodes.MAXIMUM_LOGIN_EXCEEDED.code,
+          message: errorCodes.MAXIMUM_LOGIN_EXCEEDED.message,
         });
       } else {
         // Set limitedLogin to current time + 10 minutes
@@ -53,9 +53,8 @@ export const preLoginValidation = async (req, res, next) => {
         await user.save();
         return res.status(200).json({
           status: "fail",
-          code: 6,
-          message:
-            "Failed to log in, maximum login attempt exceeded. Try again later",
+          code: errorCodes.MAXIMUM_LOGIN_EXCEEDED.code,
+          message: errorCodes.MAXIMUM_LOGIN_EXCEEDED.message,
         });
       }
     }

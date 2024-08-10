@@ -9,12 +9,16 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const uploadOnCloudinary = async (localFilePath) => {
+export const uploadOnCloudinary = async (localFilePath, userId) => {
   try {
     if (!localFilePath) return null;
+
+    //Assests will be uploading in the dedicated folder named 'sellswipe'
+    const folderPath = `sellswipe/${userId}`;
+
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
-      folder: "sellswipe",
+      folder: folderPath,
     });
 
     if (!response) {

@@ -28,6 +28,7 @@ import { fetchLocation } from "./../helper/LocationHelper.js";
 import { removeUnusedLocalFile } from "./../helper/RemoveUnusedFilesHelper.js";
 import PostModel from "../models/PostModel.js";
 import FavouriteModel from "../models/FavouriteModel.js";
+import { errorCodes } from "../constants/ErrorCodes.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -69,8 +70,8 @@ export const userLoginService = async (req, next) => {
       await user.save();
       return {
         status: "fail",
-        code: 1,
-        message: "Wrong credential",
+        code: errorCodes.AUTHENTICATION_ERROR.code,
+        message: errorCodes.AUTHENTICATION_ERROR.message,
       };
     }
 
@@ -136,7 +137,7 @@ export const userAvatarUpdateService = async (req, next) => {
     }
 
     //Upload on cloudinary
-    userAvatar = await uploadOnCloudinary(filePath);
+    userAvatar = await uploadOnCloudinary(filePath, req.headers.id);
     const response = await UserModel.findOne({ _id: userID }).exec();
 
     //At first delete the previous avatar
@@ -225,8 +226,14 @@ export const userNidUpdateRequestService = async (req, next) => {
 
     await deleteExistingFiles(user);
 
-    responses.nidFrontResponse = await uploadOnCloudinary(nidFront[0].path);
-    responses.nidBackResponse = await uploadOnCloudinary(nidBack[0].path);
+    responses.nidFrontResponse = await uploadOnCloudinary(
+      nidFront[0].path,
+      req.headers.id
+    );
+    responses.nidBackResponse = await uploadOnCloudinary(
+      nidBack[0].path,
+      req.headers.id
+    );
 
     user.nidFront = {
       url: responses.nidFrontResponse.secure_url,

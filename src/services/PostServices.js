@@ -68,7 +68,7 @@ export const createPostService = async (req, next) => {
     }
 
     const uploadPromises = req.files.map((file) =>
-      uploadOnCloudinary(file.path)
+      uploadOnCloudinary(file.path, req.headers.id)
     );
 
     const [uploadResults] = await Promise.all([Promise.all(uploadPromises)]);
@@ -135,6 +135,19 @@ export const updatePostService = async (req, next) => {
       };
     }
 
+    const postOwner = await PostModel.findOne({
+      userID: req.headers.id,
+    }).exec();
+    if (!postOwner) {
+      for (const file of req.files) {
+        removeUnusedLocalFile(file.path);
+      }
+      return {
+        status: "fail",
+        message: "Post owner not found",
+      };
+    }
+
     const existingDetailsImage = await PostDetailsModel.findOne({
       postID: postID,
     }).exec();
@@ -160,7 +173,7 @@ export const updatePostService = async (req, next) => {
 
     /*Upload new images to cloudinary*/
     const uploadPromises = req.files.map((file) =>
-      uploadOnCloudinary(file.path)
+      uploadOnCloudinary(file.path, req.headers.id)
     );
 
     /*Destructing the results after promise resovles
@@ -445,12 +458,27 @@ export const postListByFilterService = async (req, next) => {
     if (division) query.divisionID = new ObjectID(division);
     if (district) query.districtID = new ObjectID(district);
     if (area) query.areaID = new ObjectID(area);
-    if (minPrice !== undefined)
-      query.price = { ...query.price, $gte: minPrice };
-    if (maxPrice !== undefined)
-      query.price = { ...query.price, $lte: maxPrice };
 
-    //Todo: Handle discountPrice field match
+    // The price filter based on the price and the discountPrice
+    const priceFilter = {
+      $or: [
+        {
+          $and: [
+            { discount: true },
+            {
+              discountPrice: {
+                $gte: minPrice || 0,
+                $lte: maxPrice || Infinity,
+              },
+            },
+          ],
+        },
+        { price: { $gte: minPrice || 0, $lte: maxPrice || Infinity } },
+      ],
+    };
+
+    //Add the priceFilter with other query
+    query.$and = [priceFilter];
 
     const data = await PostModel.aggregate([
       {

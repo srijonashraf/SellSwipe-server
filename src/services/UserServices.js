@@ -761,7 +761,8 @@ export const reportPostService = async (req, next) => {
       {
         $addToSet: {
           reportedBy: {
-            userId: new ObjectID(req.headers.id),
+            id: new ObjectID(req.headers.id),
+            role: req.headers.role,
             causeOfReport: reportCause,
           },
         },

@@ -29,8 +29,8 @@ export const updateModelService = async (req, next) => {
       { "models._id": ModelID },
       {
         $set: {
-          "models.$.modelName": reqBody.modelName,
-          "models.$.modelImg": reqBody.modelImg,
+          "models.$.name": reqBody.name,
+          "models.$.image": reqBody.image,
         },
       },
       { new: true }

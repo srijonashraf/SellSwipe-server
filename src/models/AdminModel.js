@@ -18,11 +18,11 @@ const AdminSchema = mongoose.Schema(
       type: String, //Admin/SuperAdmin
     },
     ref: {
-      name: {
-        type: String,
-      },
       id: {
         type: mongoose.Schema.Types.ObjectId,
+      },
+      name: {
+        type: String,
       },
     },
     approvedPosts: {

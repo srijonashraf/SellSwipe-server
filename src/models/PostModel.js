@@ -42,10 +42,13 @@ const PostSchema = mongoose.Schema(
       default: false,
     },
     approvedBy: {
-      adminId: {
+      id: {
         type: mongoose.Schema.Types.ObjectId,
       },
-      adminName: {
+      name: {
+        type: String,
+      },
+      role: {
         type: String,
       },
     },
@@ -54,10 +57,13 @@ const PostSchema = mongoose.Schema(
       default: false,
     },
     declinedBy: {
-      adminId: {
+      id: {
         type: mongoose.Schema.Types.ObjectId,
       },
-      adminName: {
+      name: {
+        type: String,
+      },
+      role: {
         type: String,
       },
     },
@@ -79,8 +85,11 @@ const PostSchema = mongoose.Schema(
     },
     reportedBy: [
       {
-        userId: {
+        id: {
           type: mongoose.Schema.Types.ObjectId,
+        },
+        role: {
+          type: String,
         },
         causeOfReport: {
           type: String,
@@ -108,10 +117,13 @@ const PostSchema = mongoose.Schema(
     },
     feedback: [
       {
-        adminId: {
+        id: {
           type: mongoose.Schema.Types.ObjectId,
         },
-        adminComment: {
+        role: {
+          type: String,
+        },
+        comment: {
           type: String,
         },
       },

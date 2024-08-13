@@ -9,7 +9,7 @@ const CategorySchema = new mongoose.Schema(
     categoryImg: {
       type: String,
     },
-    subCategory: [
+    subCategories: [
       {
         name: {
           type: String,

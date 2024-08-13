@@ -159,7 +159,7 @@ export const approvedPostListService = async (req, next) => {
     const data = await PostModel.find({
       isApproved: true,
       onReview: false,
-      "approvedBy.adminId": req.headers.id,
+      "approvedBy.id": new ObjectID(req.headers.id),
     });
     if (!data) {
       return { status: "fail", message: "Failed to load approve post list" };
@@ -175,7 +175,7 @@ export const declinedPostListService = async (req, next) => {
   try {
     const data = await PostModel.find({
       isDeclined: true,
-      "declinedBy.adminId": req.headers.id,
+      "declinedBy.id": new ObjectID(req.headers.id),
     });
     if (!data) {
       return { status: "fail", message: "Failed to load declined post list" };
@@ -233,7 +233,7 @@ export const approvePostService = async (req, next) => {
       */
 
     const postId = req.body.postId;
-    const { id, name } = req.headers;
+    const { id, name, role } = req.headers;
     inputSanitizer(postId);
 
     const data = await PostModel.updateMany(
@@ -244,8 +244,9 @@ export const approvePostService = async (req, next) => {
           onReview: false,
           declinedBy: "",
           isApproved: true,
-          "approvedBy.adminId": id,
-          "approvedBy.adminName": name,
+          "approvedBy.id": new ObjectID(id),
+          "approvedBy.name": name,
+          "approvedBy.role": role,
         },
       }
     );
@@ -288,7 +289,7 @@ export const declinePostService = async (req, next) => {
       */
 
     const postId = req.body.postId;
-    const { id, name } = req.headers;
+    const { id, name, role } = req.headers;
 
     inputSanitizer(postId);
 
@@ -300,8 +301,9 @@ export const declinePostService = async (req, next) => {
           onReview: false,
           approvedBy: "",
           isDeclined: true,
-          "declinedBy.adminId": id,
-          "declinedBy.adminName": name,
+          "declinedBy.id": new ObjectID(id),
+          "declinedBy.name": name,
+          "declinedBy.role": role,
         },
       }
     );
@@ -381,8 +383,9 @@ export const sendFeedbackService = async (req, next) => {
       {
         $addToSet: {
           feedback: {
-            adminId: req.headers.id,
-            adminComment: reqBody.feedback,
+            id: new ObjectID(req.headers.id),
+            role: req.headers.role,
+            comment: reqBody.feedback,
           },
         },
       },
@@ -613,7 +616,7 @@ export const reviewPostListIdOnlyService = async (req, next) => {
     if (!data) {
       return { status: "fail", message: "Failed to load review post list" };
     }
-    const ids = data.map(item => item._id.toString());
+    const ids = data.map((item) => item._id.toString());
     return { status: "success", total: ids.length, data: { id: ids } };
   } catch (error) {
     next(error);

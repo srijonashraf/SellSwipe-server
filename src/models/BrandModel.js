@@ -11,10 +11,10 @@ const BrandSchema = new mongoose.Schema(
     },
     models: [
       {
-        modelName: {
+        name: {
           type: String,
         },
-        modelImg: {
+        image: {
           type: String,
         },
       },

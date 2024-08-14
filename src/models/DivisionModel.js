@@ -5,6 +5,7 @@ const DivisionSchema = mongoose.Schema(
     divisionName: {
       type: String,
       unique: true,
+      required: true,
     },
   },
   { timestamps: true, versionKey: false }

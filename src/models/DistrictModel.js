@@ -5,9 +5,11 @@ const DistrictSchema = mongoose.Schema(
     districtName: {
       type: String,
       unique: true,
+      required: true,
     },
     divisionID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
   },
   {

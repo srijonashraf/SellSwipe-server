@@ -97,7 +97,8 @@ const PostSchema = mongoose.Schema(
       },
     ],
     viewsCount: {
-      type: String,
+      type: Number,
+      default: 0,
     },
     divisionID: {
       type: mongoose.Schema.Types.ObjectId,

@@ -4,15 +4,18 @@ const SessionDetailsSchema = mongoose.Schema(
   {
     deviceName: {
       type: String,
+      required: true,
     },
     lastLogin: {
       type: String,
     },
     accessToken: {
       type: String,
+      required: true,
     },
     refreshToken: {
       type: String,
+      required: true,
     },
     location: {
       type: Object,

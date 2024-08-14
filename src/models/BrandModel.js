@@ -5,16 +5,15 @@ const BrandSchema = new mongoose.Schema(
     brandName: {
       type: String,
       unique: true,
+      required: true,
     },
     brandImg: {
-      type: String,
+      url: { type: String },
+      pid: { type: String },
     },
     models: [
       {
         name: {
-          type: String,
-        },
-        image: {
           type: String,
         },
       },

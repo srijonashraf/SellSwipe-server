@@ -6,7 +6,9 @@ import {
   postByUserService,
   postListByFilterService,
   postListService,
+  postSearchWithFiltersService,
   updatePostService,
+  viewPostService,
 } from "./../services/PostServices.js";
 
 export const postByUser = async (req, res, next) => {
@@ -28,6 +30,11 @@ export const updatePost = async (req, res, next) => {
   return res.status(200).json(result);
 };
 
+export const viewPost = async (req, res, next) => {
+  let result = await viewPostService(req, next);
+  return res.status(200).json(result);
+};
+
 export const deletePost = async (req, res, next) => {
   let result = await deletePostService(req, next);
   return res.status(200).json(result);
@@ -45,5 +52,10 @@ export const postList = async (req, res, next) => {
 
 export const postListByFilter = async (req, res, next) => {
   let result = await postListByFilterService(req, next);
+  return res.status(200).json(result);
+};
+
+export const postSearchWithFilters = async (req, res, next) => {
+  let result = await postSearchWithFiltersService(req, next);
   return res.status(200).json(result);
 };

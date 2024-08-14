@@ -26,7 +26,6 @@ import {
 } from "./../services/AdminServices.js";
 export const adminLogin = async (req, res, next) => {
   const result = await adminLoginService(req, next);
-
   let cookieOption = {
     maxAge: Math.floor(Date.now() / 1000) + 6 * 24 * 60 * 60,
     httpOnly: true,

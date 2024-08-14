@@ -4,9 +4,11 @@ const ReviewSchema = mongoose.Schema(
   {
     postID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     userID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     review: {
       type: String,

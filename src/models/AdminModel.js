@@ -6,9 +6,11 @@ const AdminSchema = mongoose.Schema(
     email: {
       type: String,
       unique: true,
+      required: true,
     },
     name: {
       type: String,
+      required: true,
     },
     password: {
       type: String,
@@ -16,6 +18,8 @@ const AdminSchema = mongoose.Schema(
     },
     role: {
       type: String, //Admin/SuperAdmin
+      default: "Admin",
+      required: true,
     },
     ref: {
       id: {

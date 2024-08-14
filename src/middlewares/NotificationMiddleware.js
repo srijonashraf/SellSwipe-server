@@ -1,6 +1,6 @@
 import PostModel from "../models/PostModel.js";
 import NotificationModel from "./../models/NotificationModel.js";
-import { messageConfig } from "../constants/NotificationMessages.js";
+import { messageConfig } from "../constants/Notifications.js";
 
 export const SendNotification = async (req, res, next) => {
   try {

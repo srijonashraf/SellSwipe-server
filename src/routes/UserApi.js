@@ -4,30 +4,30 @@ import * as UserController from "../controllers/UserController.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
 import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
-import { postSchemaCreate, postSchemaUpdate } from "../request/post.schema.js";
-import { userSchemaUpdate } from "../request/user.schema.js";
+import { postSchemaCreate, postSchemaUpdate } from "../request/PostSchema.js";
+import { userSchemaUpdate } from "../request/UserSchema.js";
 import { PrePostValidation } from "../middlewares/PrePostValidationMiddleware.js";
-import { idSchema } from "../request/id.schema.js";
+import { idSchema } from "../request/IdSchema.js";
 
-const protectedRouter = express.Router();
+const userRouter = express.Router();
 
 //For uploading anything we have to use Multer at first as the middleware because it handles form-data and uploads.
 
-protectedRouter.post(
+userRouter.post(
   "/updateAvatar",
   upload.single("avatar"),
   AuthVerifyMiddlware,
   UserController.userAvatarUpdate
 );
 
-protectedRouter.post(
+userRouter.post(
   "/updateProfile",
   validateRequest({ schema: userSchemaUpdate, isParam: false, isQuery: false }),
   AuthVerifyMiddlware,
   UserController.userProfileUpdate
 );
 
-protectedRouter.post(
+userRouter.post(
   "/updateNidRequest",
   upload.fields([
     { name: "nidFront", maxCount: 1 },
@@ -37,38 +37,34 @@ protectedRouter.post(
   UserController.userNidUpdateRequest
 );
 
-protectedRouter.get(
+userRouter.get(
   "/profileDetails",
   AuthVerifyMiddlware,
   UserController.userProfileDetails
 );
 
-protectedRouter.get(
+userRouter.get(
   "/allSession",
   AuthVerifyMiddlware,
   UserController.userAllSession
 );
 
-protectedRouter.get(
+userRouter.get(
   "/logoutFromSession",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.userLogoutFromSession
 );
 
-protectedRouter.get(
-  "/postByUser",
-  AuthVerifyMiddlware,
-  PostController.postByUser
-);
+userRouter.get("/postByUser", AuthVerifyMiddlware, PostController.postByUser);
 
-protectedRouter.get(
+userRouter.get(
   "/pendingPostByUser",
   AuthVerifyMiddlware,
   PostController.pendingPostByUser
 );
 
-protectedRouter.post(
+userRouter.post(
   "/createPost",
   upload.array("images", 5),
   validateRequest({ schema: postSchemaCreate, isQuery: false, isParam: false }),
@@ -77,7 +73,7 @@ protectedRouter.post(
   PostController.createPost
 );
 
-protectedRouter.post(
+userRouter.post(
   "/updatePost",
   upload.array("images", 5),
   validateRequest({ schema: postSchemaUpdate, isQuery: false, isParam: false }),
@@ -85,51 +81,57 @@ protectedRouter.post(
   PostController.updatePost
 );
 
-protectedRouter.get(
+userRouter.get(
+  "/viewPost",
+  AuthVerifyMiddlware,
+  PostController.viewPost
+);
+
+userRouter.get(
   "/deletePost",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   PostController.deletePost
 );
 
-protectedRouter.get(
+userRouter.get(
   "/deletePostImage",
   AuthVerifyMiddlware,
   PostController.deletePostImages
 );
 
-protectedRouter.post(
+userRouter.post(
   "/reportPost",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.reportPost
 );
 
-protectedRouter.post(
+userRouter.post(
   "/favouritePost",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.favouritePost
 );
 
-protectedRouter.get(
+userRouter.get(
   "/favouritePostList",
   AuthVerifyMiddlware,
   UserController.favouritePostList
 );
 
-protectedRouter.get(
+userRouter.get(
   "/activePost",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.activePost
 );
 
-protectedRouter.get(
+userRouter.get(
   "/inactivePost",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.inactivePost
 );
 
-export default protectedRouter;
+export default userRouter;

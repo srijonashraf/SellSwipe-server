@@ -3,7 +3,7 @@ import UserModel from "./../models/UserModel.js";
 import {
   destroyOnCloudinary,
   uploadOnCloudinary,
-} from "./../utility/Cloudinary/Cloudinary.js";
+} from "../utility/Cloudinary.js";
 import {
   generateAccessToken,
   generateRefreshToken,

@@ -5,9 +5,11 @@ const AreaSchema = mongoose.Schema(
     areaName: {
       type: String,
       unique: true,
+      required: true,
     },
     districtID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
   },
   {

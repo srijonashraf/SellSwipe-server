@@ -4,18 +4,22 @@ const NotificationSchema = mongoose.Schema(
   {
     type: {
       type: String,
+      required: true,
     },
     message: {
       type: String,
     },
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     senderRole: {
       type: String,
+      required: true,
     },
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     timestamp: {
       type: String,

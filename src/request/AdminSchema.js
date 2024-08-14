@@ -11,9 +11,7 @@ const objectIdValidator = (value, helpers) => {
 // Joi schema for creating an admin
 export const adminSchemaCreate = Joi.object({
   email: Joi.string().email().lowercase().required(),
-  name: Joi.string()
-    .pattern(/^[A-Za-z ]+$/)
-    .required(),
+  name: Joi.string().required(),
 
   //Default admin password is there email address
   password: Joi.any().default(Joi.ref("email")).messages({
@@ -36,7 +34,7 @@ export const adminSchemaCreate = Joi.object({
 // Joi schema for updating an admin
 export const adminSchemaUpdate = Joi.object({
   email: Joi.string().email().lowercase(),
-  name: Joi.string().pattern(/^[A-Za-z ]+$/),
+  name: Joi.string(),
   password: Joi.string(),
   role: Joi.string().valid("Admin", "SuperAdmin"),
   ref: Joi.object({

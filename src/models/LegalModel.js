@@ -5,6 +5,7 @@ const LegalSchema = mongoose.Schema(
     type: {
       type: String,
       unique: true,
+      required: true,
     },
     description: {
       type: String,

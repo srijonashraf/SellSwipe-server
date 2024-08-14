@@ -9,8 +9,8 @@ import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
   userCredentialSchema,
   userSchemaCreate,
-} from "./../request/user.schema.js";
-import { otpSchemaUpdate } from "../request/otp.schema.js";
+} from "../request/UserSchema.js";
+import { otpSchemaUpdate } from "../request/OtpSchema.js";
 
 const publicRouter = express.Router();
 
@@ -22,6 +22,7 @@ publicRouter.get("/listDistrict", LocationController.listDistrict);
 publicRouter.get("/listArea", LocationController.listArea);
 publicRouter.get("/postList", PostController.postList);
 publicRouter.get("/postListByFilter", PostController.postListByFilter);
+publicRouter.get("/postSearch", PostController.postSearchWithFilters);
 
 publicRouter.post(
   "/registration",

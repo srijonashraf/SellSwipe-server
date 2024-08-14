@@ -9,31 +9,38 @@ import {
 import mongoose from "mongoose";
 import PostDetailsModel from "../models/PostDetailsModel.js";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
+
 const ObjectID = mongoose.Types.ObjectId;
 
 export const adminLoginService = async (req, next) => {
   try {
-    let reqBody = req.body;
+    const reqBody = req.body;
     const data = await AdminModel.findOne({ email: reqBody.email }).exec();
+
     if (!data) {
       return { status: "fail", message: "No admin associated with this email" };
     }
 
     const isCorrectPassword = await data.isPasswordCorrect(reqBody.password);
     if (!isCorrectPassword) {
-      return {
-        status: "fail",
-        message: "Wrong credential",
-      };
+      return { status: "fail", message: "Wrong credentials" };
     }
 
-    const packet = { _id: data._id, role: data.role };
-    const accessTokenResponse = generateAccessToken(packet);
-    const refreshTokenResponse = generateRefreshToken(packet);
+    const admin = { _id: data._id, role: data.role };
+    const accessTokenResponse = generateAccessToken(admin);
+    const refreshTokenResponse = generateRefreshToken(admin);
 
-    //!!Free limit 45 Fire in a minute, if anything goes wrong check here.
-    const fetchResponse = await fetch(`http://ip-api.com/json/${req.ip}`);
-    const location = await fetchResponse.json();
+    // Fetch location data and handle errors
+    let location = {};
+    try {
+      const fetchResponse = await fetch(`http://ip-api.com/json/${req.ip}`);
+      if (!fetchResponse.ok) {
+        throw new Error("Failed to fetch location data");
+      }
+      location = await fetchResponse.json();
+    } catch (error) {
+      console.error("Location fetch error:", error);
+    }
 
     // Set session details to DB
     const sessionBody = {
@@ -51,19 +58,20 @@ export const adminLoginService = async (req, next) => {
     data.sessionId.push(session._id);
     await data.save();
 
-    if (accessTokenResponse && refreshTokenResponse && session) {
+    if (session) {
       return {
         status: "success",
         id: data._id,
         email: data.email,
         name: data.name,
-        accessToken: accessTokenResponse,
-        refreshToken: refreshTokenResponse,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
       };
     } else {
       return { status: "fail", message: "Failed to login" };
     }
   } catch (error) {
+    console.error("Login error:", error);
     next(error);
   }
 };
@@ -220,17 +228,17 @@ export const withdrawReportService = async (req, next) => {
 export const approvePostService = async (req, next) => {
   try {
     /*req.body should receive an array like this [{
-    "postId": [
-        "66a3de66e505fd46ea7c2435",
-        "66a3de66e505fd46ea7c2435"
-    ]
+        "postId": [
+            "66a3de66e505fd46ea7c2435",
+            "66a3de66e505fd46ea7c2435"
+        ]
 
-    or
+        or
 
-    "postId": [
-        "66a3de66e505fd46ea7c2435"
-    ]
-      */
+        "postId": [
+            "66a3de66e505fd46ea7c2435"
+        ]
+          */
 
     const postId = req.body.postId;
     const { id, name, role } = req.headers;
@@ -276,17 +284,17 @@ export const approvePostService = async (req, next) => {
 export const declinePostService = async (req, next) => {
   try {
     /*req.body should receive an array like this [{
-    "postId": [
-        "66a3de66e505fd46ea7c2435",
-        "66a3de66e505fd46ea7c2435"
-    ]
+        "postId": [
+            "66a3de66e505fd46ea7c2435",
+            "66a3de66e505fd46ea7c2435"
+        ]
 
-    or
+        or
 
-    "postId": [
-        "66a3de66e505fd46ea7c2435"
-    ]
-      */
+        "postId": [
+            "66a3de66e505fd46ea7c2435"
+        ]
+          */
 
     const postId = req.body.postId;
     const { id, name, role } = req.headers;

@@ -4,15 +4,18 @@ const EventSchema = mongoose.Schema(
   {
     type: {
       type: String,
+      required: true,
     },
     endPoint: {
       type: String,
+      required: true,
     },
     entityId: {
       type: mongoose.Schema.Types.ObjectId,
     },
     role: {
       type: String,
+      required: true,
     },
     details: {
       type: String,

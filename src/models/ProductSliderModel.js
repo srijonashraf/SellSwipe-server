@@ -4,9 +4,11 @@ const ProductSliderSchema = mongoose.Schema(
   {
     postID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     CategoryID: {
       type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
   },
   {

@@ -630,3 +630,78 @@ export const reviewPostListIdOnlyService = async (req, next) => {
     next(error);
   }
 };
+
+export const searchUserService = async (req, next) => {
+  try {
+    const { user } = req.query;
+    const response = await UserModel.aggregate([
+      {
+        $match: {
+          $or: [
+            { name: { $regex: user, $options: "i" } },
+            { phone: { $regex: user, $options: "i" } },
+          ],
+        },
+      },
+      {
+        $project: {
+          password: 0,
+          sessionId: 0,
+        },
+      },
+    ]);
+
+    if (!response) {
+      return { status: "fail", message: "No account found" };
+    }
+    return { status: "success", total: response.length, data: response };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const searchAdminService = async (req, next) => {
+  try {
+    const { admin } = req.query;
+    const response = await AdminModel.aggregate([
+      {
+        $match: {
+          $or: [
+            { name: { $regex: admin, $options: "i" } },
+            { phone: { $regex: admin, $options: "i" } },
+          ],
+        },
+      },
+      {
+        $project: {
+          password: 0,
+          sessionId: 0,
+        },
+      },
+    ]);
+    if (!response) {
+      return { status: "fail", message: "No account found" };
+    }
+    return { status: "success", total: response.length, data: response };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateAdminProfileService = async (req, next) => {
+  try {
+    const userId = req.headers.id;
+    const reqBody = req.body;
+    const response = await AdminModel.findOneAndUpdate(
+      { _id: userId },
+      { $set: reqBody },
+      { upsert: true, new: true }
+    );
+    if (!response) {
+      return { status: "fail", message: "No profile found" };
+    }
+    return { status: "success", data: response };
+  } catch (error) {
+    next(error);
+  }
+};

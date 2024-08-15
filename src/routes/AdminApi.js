@@ -399,4 +399,32 @@ adminRouter.get(
   LocationController.deleteArea
 );
 
+//Search Profile
+adminRouter.get(
+  "/searchUser",
+  AuthVerifyMiddlware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  AdminController.searchUser
+);
+
+adminRouter.get(
+  "/searchAdmin",
+  AuthVerifyMiddlware,
+  roleAuthentication("SuperAdmin"),
+  AdminController.searchAdmin
+);
+
+//Update Profile
+adminRouter.post(
+  "/updateAdminProfile",
+  validateRequest({
+    schema: adminSchemaUpdate,
+    isQuery: false,
+    isParam: false,
+  }),
+  AuthVerifyMiddlware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  AdminController.updateAdminProfile
+);
+
 export default adminRouter;

@@ -17,6 +17,9 @@ export const adminSchemaCreate = Joi.object({
   password: Joi.any().default(Joi.ref("email")).messages({
     "string.empty": "Please enter a password",
   }),
+  phone: Joi.string()
+    .pattern(/^[0-9]+$/)
+    .required(),
   role: Joi.string().valid("Admin", "SuperAdmin").required(),
   ref: Joi.object({
     name: Joi.string()
@@ -36,6 +39,7 @@ export const adminSchemaUpdate = Joi.object({
   email: Joi.string().email().lowercase(),
   name: Joi.string(),
   password: Joi.string(),
+  phone: Joi.string().pattern(/^[0-9]+$/),
   role: Joi.string().valid("Admin", "SuperAdmin"),
   ref: Joi.object({
     name: Joi.string().pattern(/^[A-Za-z ]+$/),

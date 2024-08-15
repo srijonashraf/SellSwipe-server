@@ -17,7 +17,10 @@ import {
   reviewNidListService,
   reviewPostListIdOnlyService,
   reviewPostListService,
+  searchAdminService,
+  searchUserService,
   sendFeedbackService,
+  updateAdminProfileService,
   userListService,
   warnedAccountListService,
   warningAccountService,
@@ -147,5 +150,20 @@ export const declineNid = async (req, res, next) => {
 
 export const reviewPostListIdOnly = async (req, res, next) => {
   const result = await reviewPostListIdOnlyService(req, next);
+  res.status(200).json(result);
+};
+
+export const searchUser = async (req, res, next) => {
+  const result = await searchUserService(req, next);
+  res.status(200).json(result);
+};
+
+export const searchAdmin = async (req, res, next) => {
+  const result = await searchAdminService(req, next);
+  res.status(200).json(result);
+};
+
+export const updateAdminProfile = async (req, res, next) => {
+  const result = await updateAdminProfileService(req, next);
   res.status(200).json(result);
 };

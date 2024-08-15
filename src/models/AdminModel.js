@@ -16,6 +16,9 @@ const AdminSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    phone: {
+      type: String,
+    },
     role: {
       type: String, //Admin/SuperAdmin
       default: "Admin",

@@ -33,6 +33,37 @@ dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
 
+const cleanupLocalFiles = (files) => {
+  if (files && files.nidFront) {
+    for (const file of files.nidFront) {
+      removeUnusedLocalFile(file.path);
+    }
+  }
+  if (files && files.nidBack) {
+    for (const file of files.nidBack) {
+      removeUnusedLocalFile(file.path);
+    }
+  }
+};
+
+const cleanupCloudinaryFiles = async (responses) => {
+  if (responses.nidFrontResponse) {
+    await destroyOnCloudinary(responses.nidFrontResponse.public_id);
+  }
+  if (responses.nidBackResponse) {
+    await destroyOnCloudinary(responses.nidBackResponse.public_id);
+  }
+};
+
+const deleteExistingFiles = async (user) => {
+  if (user.nidFront && user.nidFront.pid) {
+    await destroyOnCloudinary(user.nidFront.pid);
+  }
+  if (user.nidBack && user.nidBack.pid) {
+    await destroyOnCloudinary(user.nidBack.pid);
+  }
+};
+
 export const userRegistrationService = async (req, next) => {
   try {
     const reqBody = req.body;
@@ -162,37 +193,6 @@ export const userAvatarUpdateService = async (req, next) => {
     removeUnusedLocalFile(req.file.path);
     destroyOnCloudinary(userAvatar.public_id);
     next(error);
-  }
-};
-
-const cleanupLocalFiles = (files) => {
-  if (files && files.nidFront) {
-    for (const file of files.nidFront) {
-      removeUnusedLocalFile(file.path);
-    }
-  }
-  if (files && files.nidBack) {
-    for (const file of files.nidBack) {
-      removeUnusedLocalFile(file.path);
-    }
-  }
-};
-
-const cleanupCloudinaryFiles = async (responses) => {
-  if (responses.nidFrontResponse) {
-    await destroyOnCloudinary(responses.nidFrontResponse.public_id);
-  }
-  if (responses.nidBackResponse) {
-    await destroyOnCloudinary(responses.nidBackResponse.public_id);
-  }
-};
-
-const deleteExistingFiles = async (user) => {
-  if (user.nidFront && user.nidFront.pid) {
-    await destroyOnCloudinary(user.nidFront.pid);
-  }
-  if (user.nidBack && user.nidBack.pid) {
-    await destroyOnCloudinary(user.nidBack.pid);
   }
 };
 

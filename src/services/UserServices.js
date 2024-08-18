@@ -67,15 +67,8 @@ const deleteExistingFiles = async (user) => {
 export const registrationService = async (req, next) => {
   try {
     const reqBody = req.body;
-    const userEmail = reqBody.email;
 
-    const existingUser = await UserModel.countDocuments({ email: userEmail });
-
-    if (existingUser > 0) {
-      return { status: "fail", message: "This account already exists" };
-    }
-
-    const newUser = await UserModel.create(reqBody);
+    const user = await UserModel.create(reqBody);
 
     const emailResponse = await sendAuthEmailsService({
       req,
@@ -86,7 +79,7 @@ export const registrationService = async (req, next) => {
     if (emailResponse) {
       return {
         status: "success",
-        data: newUser,
+        data: user,
         message: "User registered successfully and email sent",
       };
     } else {

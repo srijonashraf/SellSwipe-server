@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import bcrypt, { genSalt } from "bcrypt";
 
 const UserSchema = mongoose.Schema(
   {
@@ -94,10 +94,16 @@ const UserSchema = mongoose.Schema(
 );
 
 UserSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
-    this.password = await bcrypt.hash(this.password, 10);
+  if (!this.isModified("password")) {
+    return next(); // Skip hashing if password is not modified
   }
-  next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    console.error("Error hashing password: ", error);
+  }
+  next(); 
 });
 
 UserSchema.methods.isPasswordCorrect = async function (password) {

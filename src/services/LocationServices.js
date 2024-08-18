@@ -8,7 +8,7 @@ const ObjectID = mongoose.Types.ObjectId;
 //Division
 export const createDivisionService = async (req, next) => {
   try {
-    let reqBody = req.body;
+    const reqBody = req.body;
     inputSanitizer(reqBody);
     const data = await DivisionModel.create(reqBody);
     if (!data) {
@@ -23,12 +23,12 @@ export const createDivisionService = async (req, next) => {
 
 export const updateDivisionService = async (req, next) => {
   try {
-    let DivisionID = req.query.divisionId;
-    let reqBody = req.body;
-    inputSanitizer(reqBody);
+    const divisionID = req.params.id;
+    const { divisionName } = req.body;
+    inputSanitizer(req.body);
     const data = await DivisionModel.findOneAndUpdate(
-      { _id: DivisionID },
-      { $set: reqBody },
+      { _id: divisionID },
+      { $set: { divisionName: divisionName } },
       { new: true }
     );
     if (!data) {
@@ -43,8 +43,8 @@ export const updateDivisionService = async (req, next) => {
 
 export const deleteDivisionService = async (req, next) => {
   try {
-    let DivisionID = req.query.divisionId;
-    const data = await DivisionModel.deleteOne({ _id: DivisionID });
+    const divisionID = req.params.id;
+    const data = await DivisionModel.deleteOne({ _id: divisionID });
     if (!data) {
       return { status: "fail", message: "Failed to delete Division" };
     } else {
@@ -55,7 +55,7 @@ export const deleteDivisionService = async (req, next) => {
   }
 };
 
-export const listDivisionService = async (req, next) => {
+export const getDivisionListService = async (req, next) => {
   try {
     const data = await DivisionModel.find().select("-createdAt -updatedAt");
     if (!data) {
@@ -71,17 +71,13 @@ export const listDivisionService = async (req, next) => {
 //District
 export const createDistrictService = async (req, next) => {
   try {
-    let reqBody = req.body;
-    inputSanitizer(reqBody);
-    let DivisionID = new ObjectID(req.query.divisionId);
+    const reqBody = req.body;
+    const divisionID = req.params.divisionId;
+    reqBody.divisionID = divisionID;
+
     const data = await DistrictModel.create(reqBody);
-    data.divisionID = DivisionID;
-    await data.save();
-    if (!data) {
-      return { status: "fail", message: "Failed to save District" };
-    } else {
-      return { status: "success", data: data };
-    }
+
+    return { status: "success", data: data };
   } catch (error) {
     next(error);
   }
@@ -89,11 +85,11 @@ export const createDistrictService = async (req, next) => {
 
 export const updateDistrictService = async (req, next) => {
   try {
-    let reqBody = req.body;
+    const reqBody = req.body;
     inputSanitizer(reqBody);
-    let DistrictID = req.query.districtId;
+    const districtID = req.params.id;
     const data = await DistrictModel.findOneAndUpdate(
-      { _id: DistrictID },
+      { _id: districtID },
       { $set: reqBody },
       { new: true }
     );
@@ -109,8 +105,8 @@ export const updateDistrictService = async (req, next) => {
 
 export const deleteDistrictService = async (req, next) => {
   try {
-    let DistrictID = req.query.districtId;
-    const data = await DistrictModel.deleteOne({ _id: DistrictID });
+    const districtID = req.params.id;
+    const data = await DistrictModel.deleteOne({ _id: districtID });
     if (!data) {
       return { status: "fail", message: "Failed to delete District" };
     } else {
@@ -121,10 +117,10 @@ export const deleteDistrictService = async (req, next) => {
   }
 };
 
-export const listDistrictService = async (req, next) => {
+export const getDistrictListService = async (req, next) => {
   try {
-    let DivisionID = new ObjectID(req.query.divisionId);
-    const data = await DistrictModel.find({ divisionID: DivisionID }).select(
+    let divisionID = req.params.divisionId;
+    const data = await DistrictModel.find({ divisionID: divisionID }).select(
       "-createdAt -updatedAt"
     );
     if (!data) {
@@ -141,12 +137,11 @@ export const listDistrictService = async (req, next) => {
 
 export const createAreaService = async (req, next) => {
   try {
-    let reqBody = req.body;
-    inputSanitizer(reqBody);
-    let DistrictID = new ObjectID(req.query.districtId);
+    const reqBody = req.body;
+    const districtID = req.params.districtId;
+    reqBody.districtID = districtID;
+
     const data = await AreaModel.create(reqBody);
-    data.districtID = DistrictID;
-    await data.save();
     if (!data) {
       return { status: "fail", message: "Failed to save Area" };
     } else {
@@ -194,11 +189,11 @@ export const createAreaService = async (req, next) => {
 
 export const updateAreaService = async (req, next) => {
   try {
-    let reqBody = req.body;
+    const reqBody = req.body;
     inputSanitizer(reqBody);
-    let AreaID = req.query.areaId;
+    const areaID = req.params.id;
     const data = await AreaModel.findOneAndUpdate(
-      { _id: AreaID },
+      { _id: areaID },
       { $set: reqBody },
       { new: true }
     );
@@ -214,8 +209,8 @@ export const updateAreaService = async (req, next) => {
 
 export const deleteAreaService = async (req, next) => {
   try {
-    let AreaID = req.query.areaId;
-    const data = await AreaModel.deleteOne({ _id: AreaID });
+    const areaID = req.params.id;
+    const data = await AreaModel.deleteOne({ _id: areaID });
     if (!data) {
       return { status: "fail", message: "Failed to delete Area" };
     } else {
@@ -226,10 +221,10 @@ export const deleteAreaService = async (req, next) => {
   }
 };
 
-export const listAreaService = async (req, next) => {
+export const getAreaListService = async (req, next) => {
   try {
-    let DistrictID = new ObjectID(req.query.districtId);
-    const data = await AreaModel.find({ districtID: DistrictID }).select(
+    const districtID = req.params.districtId;
+    const data = await AreaModel.find({ districtID: districtID }).select(
       "-createdAt -updatedAt"
     );
     if (!data) {

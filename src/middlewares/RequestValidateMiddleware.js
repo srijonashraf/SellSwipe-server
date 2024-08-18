@@ -21,17 +21,21 @@ export const validateRequest = ({
         .json({ error: "Validation schema is not defined" });
     }
 
-    const input = isParam ? req.params : isQuery ? req.query : req.body;
+    // Validate based on the specified option
+    let input = isParam ? req.params : isQuery ? req.query : req.body;
 
     if (Object.keys(input).length === 0) {
-      throw new Error("Input object is empty!");
+      return res.status(400).json({ error: "Input object is empty!" });
     }
 
-    inputSanitizer(input);
+    // Sanitize the input without mutating the original object
+    const sanitizedInput = { ...input };
+    inputSanitizer(sanitizedInput);
 
-    // console.log('⭐',input); //To debug sanitize inputs
-
-    const validationResult = schema.validate(input, { abortEarly: false }); // Joi Validator (This will validate the request schema)
+    // Validate the sanitized input
+    const validationResult = schema.validate(sanitizedInput, {
+      abortEarly: false,
+    });
 
     if (validationResult.error) {
       return res.status(400).json({
@@ -40,16 +44,15 @@ export const validateRequest = ({
       });
     }
 
-    // console.log(validationResult); //To debug validationResult
-
+    // Set the validated value back only for the relevant part of the request
     if (isParam) {
       req.params = validationResult.value;
-    }
-    if (isQuery) {
+    } else if (isQuery) {
       req.query = validationResult.value;
     } else {
       req.body = validationResult.value;
     }
+
     next();
   };
 };

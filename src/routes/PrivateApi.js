@@ -9,63 +9,76 @@ import { userSchemaUpdate } from "../request/UserSchema.js";
 import { PrePostValidation } from "../middlewares/PrePostValidationMiddleware.js";
 import { idSchema } from "../request/IdSchema.js";
 
-const userRouter = express.Router();
+const privateRouter = express.Router();
 
 //For uploading anything we have to use Multer at first as the middleware because it handles form-data and uploads.
 
-userRouter.post(
-  "/updateAvatar",
-  upload.single("avatar"),
+//_________Profile & User___________
+privateRouter.get(
+  "/users/profile",
   AuthVerifyMiddlware,
-  UserController.userAvatarUpdate
+  UserController.profile
 );
 
-userRouter.post(
-  "/updateProfile",
+privateRouter.put(
+  "/users/profile",
   validateRequest({ schema: userSchemaUpdate, isParam: false, isQuery: false }),
   AuthVerifyMiddlware,
-  UserController.userProfileUpdate
+  UserController.updateProfile
 );
 
-userRouter.post(
-  "/updateNidRequest",
+privateRouter.post(
+  "/users/avatar",
+  upload.single("avatar"),
+  AuthVerifyMiddlware,
+  UserController.updateAvatar
+);
+
+privateRouter.post(
+  "/users/nid",
   upload.fields([
     { name: "nidFront", maxCount: 1 },
     { name: "nidBack", maxCount: 1 },
   ]),
   AuthVerifyMiddlware,
-  UserController.userNidUpdateRequest
+  UserController.updateNid
 );
 
-userRouter.get(
-  "/profileDetails",
+//______Sessions______
+privateRouter.get(
+  "/sessions", // Fetch all sessions
   AuthVerifyMiddlware,
-  UserController.userProfileDetails
+  UserController.allSession
 );
 
-userRouter.get(
-  "/allSession",
-  AuthVerifyMiddlware,
-  UserController.userAllSession
-);
-
-userRouter.get(
-  "/logoutFromSession",
+privateRouter.get(
+  "/sessions/logout", // Logout from session (DELETE method since it logs out)
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
-  UserController.userLogoutFromSession
+  UserController.logoutSession
 );
 
-userRouter.get("/postByUser", AuthVerifyMiddlware, PostController.postByUser);
-
-userRouter.get(
-  "/pendingPostByUser",
+//______Posts______
+privateRouter.get(
+  "/posts/user",
   AuthVerifyMiddlware,
-  PostController.pendingPostByUser
+  PostController.getPostByUser
 );
 
-userRouter.post(
-  "/createPost",
+privateRouter.get(
+  "/posts/user/pending",
+  AuthVerifyMiddlware,
+  PostController.getPendingPostByUser
+);
+
+privateRouter.get(
+  "/posts/:id",
+  AuthVerifyMiddlware,
+  PostController.detailsPost
+);
+
+privateRouter.post(
+  "/posts",
   upload.array("images", 5),
   validateRequest({ schema: postSchemaCreate, isQuery: false, isParam: false }),
   AuthVerifyMiddlware,
@@ -73,65 +86,62 @@ userRouter.post(
   PostController.createPost
 );
 
-userRouter.post(
-  "/updatePost",
+privateRouter.put(
+  "/posts/:id",
   upload.array("images", 5),
   validateRequest({ schema: postSchemaUpdate, isQuery: false, isParam: false }),
   AuthVerifyMiddlware,
   PostController.updatePost
 );
 
-userRouter.get(
-  "/viewPost",
-  AuthVerifyMiddlware,
-  PostController.viewPost
-);
 
-userRouter.get(
-  "/deletePost",
+
+privateRouter.delete(
+  "/posts/:id",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   PostController.deletePost
 );
 
-userRouter.get(
-  "/deletePostImage",
+privateRouter.get(
+  "/posts/:id/images",
   AuthVerifyMiddlware,
   PostController.deletePostImages
 );
 
-userRouter.post(
-  "/reportPost",
+//______Posts Actions______
+privateRouter.post(
+  "/posts/:id/report",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.reportPost
 );
 
-userRouter.post(
-  "/favouritePost",
+privateRouter.post(
+  "/posts/:id/favorite",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.favouritePost
 );
 
-userRouter.get(
-  "/favouritePostList",
+privateRouter.get(
+  "/posts/favorites",
   AuthVerifyMiddlware,
   UserController.favouritePostList
 );
 
-userRouter.get(
-  "/activePost",
+privateRouter.get(
+  "/posts/active",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
   UserController.activePost
 );
 
-userRouter.get(
-  "/inactivePost",
+privateRouter.get(
+  "/posts/inactive",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
-  UserController.inactivePost
+  UserController.inActivePost
 );
 
-export default userRouter;
+export default privateRouter;

@@ -2,21 +2,26 @@ import {
   createPostService,
   deletePostImagesService,
   deletePostService,
-  pendingPostByUserService,
-  postByUserService,
+  detailsPostService,
+  getAllPostsService,
+  getPendingPostByUserService,
+  getPostByUserService,
   postListByFilterService,
-  postListService,
   postSearchWithFiltersService,
   updatePostService,
-  viewPostService,
 } from "./../services/PostServices.js";
 
-export const postByUser = async (req, res, next) => {
-  let result = await postByUserService(req, next);
+export const getPostByUser = async (req, res, next) => {
+  let result = await getPostByUserService(req, next);
   return res.status(200).json(result);
 };
-export const pendingPostByUser = async (req, res, next) => {
-  let result = await pendingPostByUserService(req, next);
+export const getPendingPostByUser = async (req, res, next) => {
+  let result = await getPendingPostByUserService(req, next);
+  return res.status(200).json(result);
+};
+
+export const detailsPost = async (req, res, next) => {
+  let result = await detailsPostService(req, next);
   return res.status(200).json(result);
 };
 
@@ -30,10 +35,6 @@ export const updatePost = async (req, res, next) => {
   return res.status(200).json(result);
 };
 
-export const viewPost = async (req, res, next) => {
-  let result = await viewPostService(req, next);
-  return res.status(200).json(result);
-};
 
 export const deletePost = async (req, res, next) => {
   let result = await deletePostService(req, next);
@@ -45,8 +46,8 @@ export const deletePostImages = async (req, res, next) => {
   return res.status(200).json(result);
 };
 
-export const postList = async (req, res, next) => {
-  let result = await postListService(req, next);
+export const getAllPosts = async (req, res, next) => {
+  let result = await getAllPostsService(req, next);
   return res.status(200).json(result);
 };
 

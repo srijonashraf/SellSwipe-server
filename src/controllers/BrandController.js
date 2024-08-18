@@ -1,8 +1,7 @@
-import path from "path";
 import {
   createBrandService,
   deleteBrandService,
-  listBrandService,
+  getBrandListService,
   updateBrandService,
 } from "./../services/BrandServices.js";
 export const createBrand = async (req, res, next) => {
@@ -20,7 +19,7 @@ export const deleteBrand = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const listBrand = async (req, res, next) => {
-  const result = await listBrandService(req, next);
+export const getBrandList = async (req, res, next) => {
+  const result = await getBrandListService(req, next);
   res.status(200).json(result);
 };

@@ -1,6 +1,6 @@
 import express from "express";
 import * as BrandController from "../controllers/BrandController.js";
-import * as CategoryContoller from "../controllers/CategoryContoller.js";
+import * as CategoryContoller from "../controllers/CategoryController.js";
 import * as ModelController from "../controllers/ModelController.js";
 import * as LocationController from "../controllers/LocationController.js";
 import * as PostController from "../controllers/PostController.js";
@@ -10,58 +10,57 @@ import {
   userCredentialSchema,
   userSchemaCreate,
 } from "../request/UserSchema.js";
-import { otpSchemaUpdate } from "../request/OtpSchema.js";
 
 const publicRouter = express.Router();
 
-publicRouter.get("/listBrand", BrandController.listBrand);
-publicRouter.get("/listCategory", CategoryContoller.listCategory);
-publicRouter.get("/listModel", ModelController.listModel);
-publicRouter.get("/listDivision", LocationController.listDivision);
-publicRouter.get("/listDistrict", LocationController.listDistrict);
-publicRouter.get("/listArea", LocationController.listArea);
-publicRouter.get("/postList", PostController.postList);
-publicRouter.get("/postListByFilter", PostController.postListByFilter);
-publicRouter.get("/postSearch", PostController.postSearchWithFilters);
+publicRouter.get("/categories", CategoryContoller.getCategoryList);
+publicRouter.get("/brands", BrandController.getBrandList);
+publicRouter.get("/models/:brandId", ModelController.getModelList);
+publicRouter.get("/locations/divisions", LocationController.getDivisionList);
+publicRouter.get(
+  "/locations/:divisionId/districts",
+  LocationController.getDistrictList
+);
+publicRouter.get(
+  "/locations/:districtId/areas",
+  LocationController.getAreaList
+);
+publicRouter.get("/posts/all-post", PostController.getAllPosts);
+publicRouter.get("/posts/filter", PostController.postListByFilter);
+publicRouter.get("/posts/search", PostController.postSearchWithFilters);
 
 publicRouter.post(
-  "/registration",
+  "/auth/register",
   validateRequest({ schema: userSchemaCreate, isParam: false, isQuery: false }),
-  UserController.userRegistration
+  UserController.registration
 );
 
 publicRouter.post(
-  "/login",
+  "/auth/login",
   validateRequest({
     schema: userCredentialSchema,
     isParam: false,
     isQuery: false,
   }),
-  UserController.userLogin
+  UserController.login
 );
 
+/**
+ * The sendVerificationEmail and sendResetPassowrdEmail is used for external API calling.
+ * Internally the sendAuthEmail function is used to deal with auth verification and reset password.
+ */
+
 publicRouter.get(
-  "/sendVerificationEmail",
+  "/auth/send-email/verification",
   UserController.sendVerificationEmail
 );
-
 publicRouter.get(
-  "/sendResetPasswordEmail",
+  "/auth/send-email/reset-password",
   UserController.sendResetPasswordEmail
 );
 
-publicRouter.get(
-  "/emailVerificationByLink",
-  UserController.emailVerificationByLink
-);
-
-publicRouter.get(
-  "/emailVerificationByOtp",
-  validateRequest({ schema: otpSchemaUpdate, isQuery: true, isParam: false }),
-  UserController.emailVerificationByOtp
-);
-
-publicRouter.post("/resetPasswordByLink", UserController.resetPasswordByLink);
-publicRouter.post("/resetPasswordByOtp", UserController.resetPasswordByOtp);
+publicRouter.get("/auth/verify/email", UserController.verifyUser);
+publicRouter.get("/auth/verify/token", UserController.verifyResetPasswordToken);
+publicRouter.post("/auth/reset-password", UserController.resetPassword);
 
 export default publicRouter;

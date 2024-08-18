@@ -5,9 +5,9 @@ import {
   deleteAreaService,
   deleteDistrictService,
   deleteDivisionService,
-  listAreaService,
-  listDistrictService,
-  listDivisionService,
+  getAreaListService,
+  getDistrictListService,
+  getDivisionListService,
   updateAreaService,
   updateDistrictService,
   updateDivisionService,
@@ -28,8 +28,8 @@ export const deleteDivision = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const listDivision = async (req, res, next) => {
-  const result = await listDivisionService(req, next);
+export const getDivisionList = async (req, res, next) => {
+  const result = await getDivisionListService(req, next);
   res.status(200).json(result);
 };
 
@@ -50,8 +50,8 @@ export const deleteDistrict = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const listDistrict = async (req, res, next) => {
-  const result = await listDistrictService(req, next);
+export const getDistrictList = async (req, res, next) => {
+  const result = await getDistrictListService(req, next);
   res.status(200).json(result);
 };
 
@@ -72,7 +72,7 @@ export const deleteArea = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const listArea = async (req, res, next) => {
-  const result = await listAreaService(req, next);
+export const getAreaList = async (req, res, next) => {
+  const result = await getAreaListService(req, next);
   res.status(200).json(result);
 };

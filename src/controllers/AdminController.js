@@ -1,34 +1,34 @@
 import {
-  addNewAdminService,
-  adminListService,
-  adminLoginService,
-  adminProfileDetailsService,
   approveNidService,
   approvePostService,
-  approvedPostListService,
+  createAdminService,
   declineNidService,
   declinePostService,
-  declinedPostListService,
   deleteAdminService,
   deletePostService,
-  reportedPostListService,
+  getAdminListService,
+  getApprovedPostListService,
+  getDeclinedPostListService,
+  getProfileService,
+  getReportedPostListService,
+  getRestrictedAccountListService,
+  getReviewNidListService,
+  getReviewPostIdsService,
+  getReviewPostListService,
+  getUserListService,
+  getWarnedAccountListService,
+  loginService,
   restrictAccountService,
-  restrictedAccountListService,
-  reviewNidListService,
-  reviewPostListIdOnlyService,
-  reviewPostListService,
   searchAdminService,
   searchUserService,
   sendFeedbackService,
-  updateAdminProfileService,
-  userListService,
-  warnedAccountListService,
+  updateAdminService,
   warningAccountService,
   withdrawReportService,
   withdrawRestrictionsService,
 } from "./../services/AdminServices.js";
-export const adminLogin = async (req, res, next) => {
-  const result = await adminLoginService(req, next);
+export const login = async (req, res, next) => {
+  const result = await loginService(req, next);
   let cookieOption = {
     maxAge: Math.floor(Date.now() / 1000) + 6 * 24 * 60 * 60,
     httpOnly: true,
@@ -38,13 +38,18 @@ export const adminLogin = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const adminProfileDetails = async (req, res, next) => {
-  const result = await adminProfileDetailsService(req, next);
+export const getProfile = async (req, res, next) => {
+  const result = await getProfileService(req, next);
   res.status(200).json(result);
 };
 
-export const addNewAdmin = async (req, res, next) => {
-  const result = await addNewAdminService(req, next);
+export const createAdmin = async (req, res, next) => {
+  const result = await createAdminService(req, next);
+  res.status(200).json(result);
+};
+
+export const updateAdmin = async (req, res, next) => {
+  const result = await updateAdminService(req, next);
   res.status(200).json(result);
 };
 
@@ -53,33 +58,38 @@ export const deleteAdmin = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const adminList = async (req, res, next) => {
-  const result = await adminListService(req, next);
+export const getAdminList = async (req, res, next) => {
+  const result = await getAdminListService(req, next);
   res.status(200).json(result);
 };
 
-export const userList = async (req, res, next) => {
-  const result = await userListService(req, next);
+export const getUserList = async (req, res, next) => {
+  const result = await getUserListService(req, next);
   res.status(200).json(result);
 };
 
-export const reviewPostList = async (req, res, next) => {
-  const result = await reviewPostListService(req, next);
+export const getReviewPostList = async (req, res, next) => {
+  const result = await getReviewPostListService(req, next);
   res.status(200).json(result);
 };
 
-export const approvedPostList = async (req, res, next) => {
-  const result = await approvedPostListService(req, next);
+export const getReviewPostIds = async (req, res, next) => {
+  const result = await getReviewPostIdsService(req, next);
   res.status(200).json(result);
 };
 
-export const declinedPostList = async (req, res, next) => {
-  const result = await declinedPostListService(req, next);
+export const getApprovedPostList = async (req, res, next) => {
+  const result = await getApprovedPostListService(req, next);
   res.status(200).json(result);
 };
 
-export const reportedPostList = async (req, res, next) => {
-  const result = await reportedPostListService(req, next);
+export const getDeclinedPostList = async (req, res, next) => {
+  const result = await getDeclinedPostListService(req, next);
+  res.status(200).json(result);
+};
+
+export const getReportedPostList = async (req, res, next) => {
+  const result = await getReportedPostListService(req, next);
   res.status(200).json(result);
 };
 
@@ -108,13 +118,13 @@ export const sendFeedback = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const warnedAccountList = async (req, res, next) => {
-  const result = await warnedAccountListService(req, next);
+export const getWarnedAccountList = async (req, res, next) => {
+  const result = await getWarnedAccountListService(req, next);
   res.status(200).json(result);
 };
 
-export const restrictedAccountList = async (req, res, next) => {
-  const result = await restrictedAccountListService(req, next);
+export const getRestrictedAccountList = async (req, res, next) => {
+  const result = await getRestrictedAccountListService(req, next);
   res.status(200).json(result);
 };
 
@@ -123,18 +133,18 @@ export const withdrawRestrictions = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const restrictAccount = async (req, res, next) => {
-  const result = await restrictAccountService(req, next);
-  res.status(200).json(result);
-};
-
 export const warningAccount = async (req, res, next) => {
   const result = await warningAccountService(req, next);
   res.status(200).json(result);
 };
 
-export const reviewNidList = async (req, res, next) => {
-  const result = await reviewNidListService(req, next);
+export const restrictAccount = async (req, res, next) => {
+  const result = await restrictAccountService(req, next);
+  res.status(200).json(result);
+};
+
+export const getReviewNidList = async (req, res, next) => {
+  const result = await getReviewNidListService(req, next);
   res.status(200).json(result);
 };
 
@@ -148,11 +158,6 @@ export const declineNid = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const reviewPostListIdOnly = async (req, res, next) => {
-  const result = await reviewPostListIdOnlyService(req, next);
-  res.status(200).json(result);
-};
-
 export const searchUser = async (req, res, next) => {
   const result = await searchUserService(req, next);
   res.status(200).json(result);
@@ -160,10 +165,5 @@ export const searchUser = async (req, res, next) => {
 
 export const searchAdmin = async (req, res, next) => {
   const result = await searchAdminService(req, next);
-  res.status(200).json(result);
-};
-
-export const updateAdminProfile = async (req, res, next) => {
-  const result = await updateAdminProfileService(req, next);
   res.status(200).json(result);
 };

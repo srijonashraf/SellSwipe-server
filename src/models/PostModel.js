@@ -42,7 +42,7 @@ const PostSchema = mongoose.Schema(
       default: false,
     },
     approvedBy: {
-      id: {
+      userId: {
         type: mongoose.Schema.Types.ObjectId,
       },
       name: {
@@ -57,7 +57,7 @@ const PostSchema = mongoose.Schema(
       default: false,
     },
     declinedBy: {
-      id: {
+      userId: {
         type: mongoose.Schema.Types.ObjectId,
       },
       name: {
@@ -85,7 +85,7 @@ const PostSchema = mongoose.Schema(
     },
     reportedBy: [
       {
-        id: {
+        userId: {
           type: mongoose.Schema.Types.ObjectId,
         },
         role: {
@@ -118,7 +118,7 @@ const PostSchema = mongoose.Schema(
     },
     feedback: [
       {
-        id: {
+        userId: {
           type: mongoose.Schema.Types.ObjectId,
         },
         role: {

@@ -3,10 +3,10 @@ import {
   createSubCategoryService,
   deleteCategoryService,
   deleteSubCategoryService,
-  listCategoryService,
+  getCategoryListService,
   updateCategoryService,
   updateSubCategoryService,
-} from "./../services/CategoryServices.js";
+} from "../services/CategoryServices.js";
 export const createCategory = async (req, res, next) => {
   const result = await createCategoryService(req, next);
   res.status(200).json(result);
@@ -22,8 +22,8 @@ export const deleteCategory = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const listCategory = async (req, res, next) => {
-  const result = await listCategoryService(req, next);
+export const getCategoryList = async (req, res, next) => {
+  const result = await getCategoryListService(req, next);
   res.status(200).json(result);
 };
 

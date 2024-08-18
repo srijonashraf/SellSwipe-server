@@ -11,7 +11,7 @@ import { inputSanitizer } from "./../middlewares/RequestValidateMiddleware.js";
 
 const ObjectID = mongoose.Types.ObjectId;
 
-export const postByUserService = async (req, next) => {
+export const getPostByUserService = async (req, next) => {
   try {
     const userId = req.headers.id;
     const posts = await PostModel.find({
@@ -31,7 +31,7 @@ export const postByUserService = async (req, next) => {
   }
 };
 
-export const pendingPostByUserService = async (req, next) => {
+export const getPendingPostByUserService = async (req, next) => {
   try {
     const userId = req.headers.id;
     const posts = await PostModel.find({
@@ -115,7 +115,7 @@ export const createPostService = async (req, next) => {
 
 export const updatePostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.query.postId);
+    const postID = new ObjectID(req.params.id);
     let reqBody = req.body;
     reqBody.userID = new ObjectID(req.headers.id);
     const { PostData, PostDetailsData } = await mapData(reqBody);
@@ -241,11 +241,11 @@ export const updatePostService = async (req, next) => {
   }
 };
 
-export const viewPostService = async (req, next) => {
+export const detailsPostService = async (req, next) => {
   try {
-    const postID = req.query.postId;
+    const postID = req.params.id;
 
-    //Increment the view count to the post
+    //Increment the view count to the post and show details
     await PostModel.updateOne({ _id: postID }, { $inc: { viewsCount: 1 } });
 
     const response = await PostModel.aggregate([
@@ -420,50 +420,52 @@ export const deletePostService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
     const userID = new ObjectID(req.headers.id);
-    const postID = new ObjectID(req.query.postId);
+    const postID = new ObjectID(req.params.id);
 
-    /*Transaction is used here because the full process is conntected
-    with two database collection so if there any issue with any of
-    those collection it will revert the collection to initial position again*/
+    /* Transaction is used here because the full process is connected
+    with two database collections so if there is any issue with any of
+    those collections, it will revert the collections to the initial state */
 
-    session.startTransaction();
+    session.startTransaction(); // Start transaction
 
+    // Delete post
     const post = await PostModel.deleteOne({
       _id: postID,
       userID: userID,
     }).session(session);
 
     if (post.deletedCount !== 1) {
-      await session.abortTransaction();
-      session.endSession();
+      await session.abortTransaction(); // Abort transaction
       return { status: "fail", message: "Failed to delete post" };
     }
 
+    // Delete post details
     const postDetails = await PostDetailsModel.deleteOne({
       postID: postID,
     }).session(session);
 
     if (postDetails.deletedCount !== 1) {
-      await session.abortTransaction();
-      session.endSession();
+      await session.abortTransaction(); // Abort transaction if postDetails fails
       return { status: "fail", message: "Failed to delete post details" };
     }
 
+    // Commit transaction
     await session.commitTransaction();
-    session.endSession();
+
     return { status: "success", message: "Post is deleted" };
   } catch (error) {
+    // Abort transaction on any error
     await session.abortTransaction();
-    session.endSession();
     next(error);
   } finally {
-    session.endSession();
+    // End session only once in the finally block
+    await session.endSession();
   }
 };
 
 export const deletePostImagesService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.query.postId);
+    const postID = new ObjectID(req.params.id);
     const pid = req.query.pid;
 
     // Find the post data
@@ -541,7 +543,7 @@ export const deletePostImagesService = async (req, next) => {
   }
 };
 
-export const postListService = async (req, next) => {
+export const getAllPostsService = async (req, next) => {
   try {
     const data = await PostModel.aggregate([
       {
@@ -853,7 +855,7 @@ export const postSearchWithFiltersService = async (req, next) => {
   try {
     let { keyword } = req.query;
     let keyWordRegex = { $regex: keyword, $options: "i" };
-
+    console.log(keyWordRegex);
     /**
      * The postdetails, division, district, area are separate collections,
      * so we have to join them first (using $lookup) and then unwind them

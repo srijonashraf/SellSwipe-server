@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 
 const NotificationSchema = mongoose.Schema(
   {
-    type: {
+    path: {
+      type: String,
+      required: true,
+    },
+    type:{
       type: String,
       required: true,
     },

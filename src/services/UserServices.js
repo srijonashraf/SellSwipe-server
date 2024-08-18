@@ -17,18 +17,18 @@ import {
   emailVerificationTemplate,
   resetPasswordTemplate,
 } from "../emailTemplate/SendEmailTemplate.js";
-import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import validator from "validator";
 import Joi from "joi";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 import { currentTime } from "./../constants/CurrectTime.js";
-import { baseUrl } from "../constants/BaseUrl.js";
 import { fetchLocation } from "./../helper/LocationHelper.js";
 import { removeUnusedLocalFile } from "./../helper/RemoveUnusedFilesHelper.js";
 import PostModel from "../models/PostModel.js";
 import FavouriteModel from "../models/FavouriteModel.js";
 import { errorCodes } from "../constants/ErrorCodes.js";
+import { generateOtpAndLink } from "../utility/OtpandLink.js";
+import { emailTypes } from "./../constants/emailTypes.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -64,31 +64,43 @@ const deleteExistingFiles = async (user) => {
   }
 };
 
-export const userRegistrationService = async (req, next) => {
+export const registrationService = async (req, next) => {
   try {
     const reqBody = req.body;
-    const userEmail = req.body.email;
-    const existingUser = await UserModel.find({
-      email: userEmail,
-    }).count();
+    const userEmail = reqBody.email;
 
-    if (!existingUser) {
-      const newUser = await UserModel.create(reqBody);
+    const existingUser = await UserModel.countDocuments({ email: userEmail });
 
-      await sendVerificationEmailService(req);
+    if (existingUser > 0) {
+      return { status: "fail", message: "This account already exists" };
+    }
 
+    const newUser = await UserModel.create(reqBody);
+
+    const emailResponse = await sendAuthEmailsService({
+      req,
+      emailType: emailTypes.EMAIL_VERIFICATION,
+      next,
+    });
+
+    if (emailResponse) {
       return {
         status: "success",
         data: newUser,
+        message: "User registered successfully and email sent",
+      };
+    } else {
+      return {
+        status: "fail",
+        message: "User registered, but email sending failed",
       };
     }
-    return { status: "fail", message: "This account already exist" };
   } catch (error) {
     next(error);
   }
 };
 
-export const userLoginService = async (req, next) => {
+export const loginService = async (req, next) => {
   try {
     const reqBody = req.body;
     const user = await UserModel.findOne({
@@ -158,7 +170,45 @@ export const userLoginService = async (req, next) => {
   }
 };
 
-export const userAvatarUpdateService = async (req, next) => {
+export const profileService = async (req, next) => {
+  try {
+    let userID = new ObjectID(req.headers.id);
+    const user = await UserModel.findOne({ _id: userID }).select(
+      "-password -sessionId -phoneVerified -nidVerified -emailVerified -accountStatus -warningCount"
+    );
+    if (!user) {
+      return { status: "fail", message: "Failed to load user profile" };
+    }
+    return { status: "success", data: user };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProfileService = async (req, next) => {
+  try {
+    //Using fineOne instead of findOneAndUpdate beacuse findOneAndUpdate doesn't trigger the pre "save" which is a must for hashing
+    const user = await UserModel.findById(req.headers.id).select("-password");
+    if (!user) {
+      return { status: "fail", message: "User not found" };
+    }
+    // Update the user document with values from req.body
+    Object.assign(user, req.body);
+
+    const updatedUser = await user.save();
+
+    return {
+      status: "success",
+      message: "Profile details updated",
+      data: updatedUser,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+export const updateAvatarService = async (req, next) => {
   let userAvatar = "";
   try {
     let userID = new ObjectID(req.headers.id);
@@ -196,7 +246,7 @@ export const userAvatarUpdateService = async (req, next) => {
   }
 };
 
-export const userNidUpdateRequestService = async (req, next) => {
+export const updateNidService = async (req, next) => {
   const responses = {};
   try {
     let userID = new ObjectID(req.headers.id);
@@ -256,45 +306,7 @@ export const userNidUpdateRequestService = async (req, next) => {
   }
 };
 
-export const userProfileUpdateService = async (req, next) => {
-  try {
-    let id = req.headers.id;
-    let role = req.headers.role;
-
-    const response = await UserModel.findOneAndUpdate(
-      { _id: id, role: role },
-      { $set: req.body },
-      { new: true }
-    ).select("-password");
-
-    if (!response) {
-      return { status: "fail", message: "Failed to update profile details" };
-    }
-    return {
-      status: "success",
-      message: "Profile details updated",
-      data: response,
-    };
-  } catch (error) {
-    next(error);
-  }
-};
-export const userProfileDetailsService = async (req, next) => {
-  try {
-    let userID = new ObjectID(req.headers.id);
-    const user = await UserModel.findOne({ _id: userID }).select(
-      "-password -sessionId -phoneVerified -nidVerified -emailVerified -accountStatus -warningCount"
-    );
-    if (!user) {
-      return { status: "fail", message: "Failed to load user profile" };
-    }
-    return { status: "success", data: user };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const userAllSessionService = async (req, next) => {
+export const allSessionService = async (req, next) => {
   try {
     let userID = new ObjectID(req.headers.id);
     const user = await UserModel.findOne({ _id: userID }).populate(
@@ -312,7 +324,7 @@ export const userAllSessionService = async (req, next) => {
   }
 };
 
-export const userLogoutFromSessionService = async (req, next) => {
+export const logoutSessionService = async (req, next) => {
   try {
     const sessionID = req.query.sessionId;
 
@@ -362,144 +374,50 @@ export const userLogoutFromSessionService = async (req, next) => {
   }
 };
 
-export const sendVerificationEmailService = async (req, next) => {
+export const sendAuthEmailsService = async ({ req, emailType, next }) => {
   try {
-    const input = req.body;
-
-    //Joi validation
-    const objectSchema = Joi.object({
-      email: Joi.string().email().required(),
-    }).unknown(true);
-
-    const { error, value } = objectSchema.validate(input, {
-      abortEarly: false,
-    });
-    if (error) {
-      return {
-        status: "fail",
-        message: "Invalid object",
-        errors: error.details,
-      };
-    }
-
-    // Get the email after validation
-    let userEmail = validator.escape(value.email);
-
-    let otp = Math.floor(100000 + Math.random() * 900000);
-    let token = jwt.sign({ userEmail }, process.env.JWT_GENERAL_TOKEN_SECRET, {
-      expiresIn: process.env.TOKEN_EXPIRE_TIME,
-    });
-
-    const user = await UserModel.findOne({ email: userEmail }).exec();
+    const { email } = req.body;
+    const user = await UserModel.findOne({ email }).exec();
     if (!user) {
       return { status: "fail", message: "No registered user found" };
     }
-
-    /*This method will only work if the frontend and backend are in same domain (combined architecture)
-    else we have to manually set the url of the frontend to follow from backend.
-    e.g: sellswipe.com/emailVerificationByLink?userId={}
-    */
-
-    //This link will be followed by frontend
-    const link = `${baseUrl(req)}/emailVerificationByLink?userId=${
-      user._id
-    }&token=${token}`;
-
-    const sentOTP = await OtpModel.create({
-      userID: user._id,
-      email: user.email,
-      otp: otp,
-      token: token,
-      initiated: currentTime,
-      expiresAt: currentTime + parseInt(process.env.OTP_EXPIRE_TIME),
-      expired: false,
-    });
-
-    const emailTemplateResponse = await emailVerificationTemplate({
-      name: user.name,
-      link: link,
-    });
-    await EmailSend(
-      user.email,
-      emailTemplateResponse.subject,
-      emailTemplateResponse.htmlContent
+    const { otp, link } = await generateOtpAndLink(
+      req,
+      email,
+      user._id,
+      emailType
     );
 
-    return {
-      status: "success",
-      message: "A verification email sent successfully! Check your mailbox.",
-    };
-  } catch (error) {
-    next(error);
-  }
-};
+    let emailTemplate;
 
-export const sendResetPasswordEmailService = async (req, next) => {
-  try {
-    //If from UserRegistration then get the input from body and if from ResetPassword then from query
-    const input = req.query;
-
-    //Joi validation
-    const objectSchema = Joi.object({
-      email: Joi.string().email().required(),
-    }).unknown(true);
-
-    const { error, value } = objectSchema.validate(input, {
-      abortEarly: false,
-    });
-    if (error) {
-      return {
-        status: "fail",
-        message: "Invalid object",
-        errors: error.details,
-      };
+    if (emailType === emailTypes.EMAIL_VERIFICATION) {
+      emailTemplate = emailVerificationTemplate({
+        name: user.name,
+        link: link,
+      });
+    } else if (emailType === emailTypes.RESET_PASSWORD) {
+      emailTemplate = resetPasswordTemplate({
+        name: user.name,
+        link: link,
+        otp: otp,
+      });
     }
 
-    // Get the email after validation
-    let userEmail = validator.escape(value.email);
-
-    let otp = Math.floor(100000 + Math.random() * 900000);
-    let token = jwt.sign({ userEmail }, process.env.JWT_GENERAL_TOKEN_SECRET, {
-      expiresIn: process.env.TOKEN_EXPIRE_TIME,
-    });
-
-    const user = await UserModel.findOne({ email: userEmail }).exec();
-    if (!user) {
-      return { status: "fail", message: "No registered user found" };
+    if (emailTemplate) {
+      const result = await EmailSend(
+        email,
+        emailTemplate.subject,
+        emailTemplate.htmlContent
+      );
+      if (result) {
+        return true;
+      } else {
+        await UserModel.deleteOne({ email });
+        return false;
+      }
     }
 
-    //This link will be followed by frontend
-
-    const link = `${baseUrl(req)}/resetPasswordByLink?userId=${
-      user._id
-    }&token=${token}`;
-
-    const sentOTP = await OtpModel.create({
-      userID: user._id,
-      email: user.email,
-      otp: otp,
-      token: token,
-      initiated: currentTime,
-      expiresAt: currentTime + parseInt(process.env.OTP_EXPIRE_TIME),
-      expired: false,
-    });
-
-    const emailTemplateResponse = await resetPasswordTemplate({
-      name: user.name,
-      link: link,
-      otp: otp,
-    });
-
-    await EmailSend(
-      user.email,
-      emailTemplateResponse.subject,
-      emailTemplateResponse.htmlContent
-    );
-
-    return {
-      status: "success",
-      message: "A verification email sent successfully! Check your mailbox.",
-    };
+    return false;
   } catch (error) {
     next(error);
   }
@@ -561,9 +479,7 @@ export const emailVerificationByLinkService = async (req, next) => {
 
 export const emailVerificationByOtpService = async (req, next) => {
   try {
-    const requestQueryParams = req.query;
-    inputSanitizer(requestQueryParams);
-    const { otp, email } = requestQueryParams;
+    const { otp, email } = req.body;
 
     const otpResponse = await OtpModel.findOne({
       otp,
@@ -571,6 +487,7 @@ export const emailVerificationByOtpService = async (req, next) => {
       expired: false,
       expiresAt: { $gte: currentTime },
     }).exec();
+
     if (!otpResponse) {
       return { status: "fail", message: "OTP is invalid or expired" };
     }
@@ -587,7 +504,6 @@ export const emailVerificationByOtpService = async (req, next) => {
 
     await OtpModel.deleteMany({ userID: user._id });
 
-    // Send email verification success template
     const emailTemplateResponse = afterEmailVerificationTemplate({
       name: user.name,
     });
@@ -604,15 +520,40 @@ export const emailVerificationByOtpService = async (req, next) => {
   }
 };
 
+export const verifyResetPasswordTokenService = async (req, next) => {
+  try {
+    const { userId, token } = req.query;
+
+    if (!validator.isMongoId(userId) || !validator.isJWT(token)) {
+      return { status: "fail", message: "The objects are not valid" };
+    }
+
+    const user = await UserModel.findById(userId).exec();
+
+    if (!user) {
+      return { status: "fail", message: "User not found" };
+    }
+
+    const validToken = await OtpModel.findOne({
+      userID: userId,
+      email: user.email,
+      token: token,
+      expired: false,
+      expiresAt: { $gte: currentTime },
+    }).exec();
+
+    if (validToken) {
+      return true;
+    }
+    return false;
+  } catch (error) {
+    next(error);
+  }
+};
 export const resetPasswordByLinkService = async (req, next) => {
   try {
-    const requestQueryParam = req.query;
-    const requestBody = req.body;
-    inputSanitizer(requestQueryParam);
-    inputSanitizer(requestBody);
-
-    const { userId, token } = requestQueryParam;
-    const { newPassword, confirmPassword } = requestBody;
+    const { userId, token } = req.query;
+    const { newPassword, confirmPassword } = req.body;
 
     if (newPassword !== confirmPassword) {
       return { status: "fail", message: "Password didn't matched" };
@@ -660,6 +601,7 @@ export const resetPasswordByLinkService = async (req, next) => {
 
     return { status: "success", message: "Password changed successfully" };
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
@@ -746,7 +688,7 @@ export const resetPasswordByOtpService = async (req, next) => {
 
 export const reportPostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.query.postId);
+    const postID = new ObjectID(req.params.id);
     const reqBody = req.body;
 
     inputSanitizer(reqBody);
@@ -756,12 +698,12 @@ export const reportPostService = async (req, next) => {
     const reportResponse = await PostModel.findOneAndUpdate(
       {
         _id: postID,
-        "reportPost.reportedBy": { $nin: [new ObjectID(req.headers.id)] },
+        "reportedBy.userId": { $nin: [new ObjectID(req.headers.id)] },
       },
       {
         $addToSet: {
           reportedBy: {
-            id: new ObjectID(req.headers.id),
+            userId: new ObjectID(req.headers.id),
             role: req.headers.role,
             causeOfReport: reportCause,
           },
@@ -788,7 +730,7 @@ export const reportPostService = async (req, next) => {
 
 export const favouritePostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.query.postId);
+    const postID = new ObjectID(req.params.id);
     const userID = new ObjectID(req.headers.id);
 
     const favouriteResponse = await FavouriteModel.findOneAndUpdate(
@@ -864,7 +806,7 @@ export const activePostService = async (req, next) => {
   }
 };
 
-export const inactivePostService = async (req, next) => {
+export const inActivePostService = async (req, next) => {
   try {
     const postID = new ObjectID(req.query.postId);
     const userID = new ObjectID(req.headers.id);

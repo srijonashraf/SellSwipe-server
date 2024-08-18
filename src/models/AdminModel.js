@@ -56,8 +56,15 @@ const AdminSchema = mongoose.Schema(
 );
 
 AdminSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  if (!this.isModified("password")) {
+    return next(); // Skip hashing if password is not modified
+  }
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    console.error("Error hashing password: ", error);
+  }
   next();
 });
 

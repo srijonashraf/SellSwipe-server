@@ -3,7 +3,7 @@ import BrandModel from "./../models/BrandModel.js";
 export const createModelService = async (req, next) => {
   try {
     let modelsToAdd = [];
-    const brandID = req.query.brandId;
+    const brandID = req.params.brandId;
     const reqModels = req.body.modelsName;
 
     /**
@@ -56,10 +56,20 @@ export const createModelService = async (req, next) => {
 
 export const updateModelService = async (req, next) => {
   try {
+    let modelID = req.params.id;
+    let brandID = req.params.brandId;
     let modelName = req.body.name;
-    let modelID = req.query.modelId;
+    //Check if model name already exists
+    const exists = await BrandModel.findOne({
+      _id: brandID,
+      models: { $elemMatch: { name: modelName } },
+    });
+    if (exists) {
+      return { status: "fail", message: "Model already exists" };
+    }
+    //If its new then update
     const data = await BrandModel.findOneAndUpdate(
-      { "models._id": modelID },
+      { _id: brandID, "models._id": modelID },
       {
         $set: {
           "models.$.name": modelName,
@@ -79,7 +89,7 @@ export const updateModelService = async (req, next) => {
 
 export const deleteModelService = async (req, next) => {
   try {
-    let modelID = req.query.modelId;
+    let modelID = req.params.id;
     const data = await BrandModel.findOneAndUpdate(
       { "models._id": modelID },
       { $pull: { models: { _id: modelID } } },
@@ -99,10 +109,10 @@ export const deleteModelService = async (req, next) => {
   }
 };
 
-export const listModelService = async (req, next) => {
+export const getModelListService = async (req, next) => {
   try {
-    let BrandID = req.query.brandId;
-    const data = await BrandModel.find({ _id: BrandID }).select(
+    let brandID = req.params.brandId;
+    const data = await BrandModel.find({ _id: brandID }).select(
       "-_id brandName models"
     );
     if (!data) {

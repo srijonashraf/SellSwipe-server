@@ -9,10 +9,10 @@ import helmet from "helmet";
 import hpp from "hpp";
 import { trackRefresh } from "./src/middlewares/LastRefreshMiddleware.js";
 import adminRouter from "./src/routes/AdminApi.js";
-import userRouter from "./src/routes/UserApi.js";
 import publicRouter from "./src/routes/PublicApi.js";
 import useragent from "express-useragent";
 import { errorHandler } from "./src/middlewares/ErrorHandlerMiddleware.js";
+import privateRouter from "./src/routes/PrivateApi.js";
 
 dotenv.config();
 const app = new express();
@@ -69,7 +69,7 @@ app.get("/", function (req, res) {
 // });
 
 app.use("/api/v1/", publicRouter); //Public Router
-app.use("/api/v1/user", userRouter); // Protected Router
+app.use("/api/v1/user", privateRouter); // Protected Router
 app.use("/api/v1/admin", adminRouter); //Admin Router
 
 app.use(errorHandler);

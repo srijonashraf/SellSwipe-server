@@ -13,7 +13,7 @@ export const createCategoryService = async (req, next) => {
 
     // Check if the category already exists
     const existing = await CategoryModel.countDocuments({
-      categoryName: { $regex: categoryName, $options: "i" },
+      categoryName: categoryName,
     }).exec();
 
     if (existing > 0) {
@@ -54,7 +54,7 @@ export const updateCategoryService = async (req, next) => {
   try {
     let cloudinaryResponse = {};
     let categoryName = "";
-    const categoryID = req.query.categoryId;
+    const categoryID = req.params.categoryId;
 
     //Find the category at first
     const data = await CategoryModel.findById(categoryID);
@@ -99,7 +99,7 @@ export const updateCategoryService = async (req, next) => {
 
 export const deleteCategoryService = async (req, next) => {
   try {
-    const categoryID = req.query.categoryId;
+    const categoryID = req.params.categoryId;
     const data = await CategoryModel.findOneAndDelete({ _id: categoryID });
     if (!data) {
       return { status: "fail", message: "Failed to delete Category" };
@@ -116,7 +116,7 @@ export const deleteCategoryService = async (req, next) => {
   }
 };
 
-export const listCategoryService = async (req, next) => {
+export const getCategoryListService = async (req, next) => {
   try {
     const data = await CategoryModel.find().select("-createdAt -updatedAt");
     if (!data) {
@@ -132,7 +132,7 @@ export const listCategoryService = async (req, next) => {
 export const createSubCategoryService = async (req, next) => {
   try {
     let subCategoriesToAdd = [];
-    const categoryID = req.query.categoryId;
+    const categoryID = req.params.categoryId;
     const reqSubCategories = req.body.subCategoryNames;
 
     /**
@@ -191,9 +191,20 @@ export const createSubCategoryService = async (req, next) => {
 
 export const updateSubCategoryService = async (req, next) => {
   try {
-    const { subCategoryId } = req.query;
+    const categoryId = req.params.categoryId;
+    const subCategoryId = req.params.id;
     const subCategoryName = req.body.name;
-    const data = await CategoryModel.findOneAndUpdate(
+    //Check if the sub category already exist
+    const exists = await CategoryModel.findOne({
+      _id: categoryId,
+      subCategories: {
+        $elemMatch: { name: subCategoryName },
+      },
+    });
+    if (exists) {
+      return { status: "fail", message: "This sub category is already exist" };
+    }
+    const data = await CategoryModel.updateOne(
       { "subCategories._id": subCategoryId },
       {
         $set: {
@@ -202,11 +213,14 @@ export const updateSubCategoryService = async (req, next) => {
       },
       { new: true }
     );
-    if (!data) {
+    if (data.modifiedCount === 0) {
       return { status: "fail", message: "Failed to save sub Category" };
-    } else {
-      return { status: "success", data: data };
     }
+    return {
+      status: "success",
+      message: "Sub category updated successfully",
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -214,14 +228,14 @@ export const updateSubCategoryService = async (req, next) => {
 
 export const deleteSubCategoryService = async (req, next) => {
   try {
-    const { subCategoryId } = req.query;
+    const { id } = req.params;
     const data = await CategoryModel.updateOne(
       {
-        "subCategories._id": subCategoryId,
+        "subCategories._id": id,
       },
       {
         $pull: {
-          subCategories: { _id: subCategoryId },
+          subCategories: { _id: id },
         },
       },
       { new: true }

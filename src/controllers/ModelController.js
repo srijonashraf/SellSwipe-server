@@ -1,7 +1,7 @@
 import {
   createModelService,
   deleteModelService,
-  listModelService,
+  getModelListService,
   updateModelService,
 } from "./../services/ModelServices.js";
 export const createModel = async (req, res, next) => {
@@ -19,7 +19,7 @@ export const deleteModel = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const listModel = async (req, res, next) => {
-  const result = await listModelService(req, next);
+export const getModelList = async (req, res, next) => {
+  const result = await getModelListService(req, next);
   res.status(200).json(result);
 };

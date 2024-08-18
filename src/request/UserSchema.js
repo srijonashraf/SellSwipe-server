@@ -11,7 +11,7 @@ const objectIdValidator = (value, helpers) => {
 
 // Joi schema for creating an user
 export const userSchemaCreate = Joi.object({
-  email: Joi.string().email().lowercase().required(),
+  email: Joi.string().email(),
   name: Joi.string().required(),
   role: Joi.string().valid("User").default("User"),
   avatar: Joi.object({
@@ -49,7 +49,7 @@ export const userSchemaCreate = Joi.object({
 
 // Joi schema for updating an user
 export const userSchemaUpdate = Joi.object({
-  email: Joi.string().email().lowercase(),
+  email: Joi.string().email(),
   name: Joi.string(),
   role: Joi.string().valid("User"),
   avatar: Joi.object({

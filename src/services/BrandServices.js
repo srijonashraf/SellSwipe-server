@@ -53,7 +53,7 @@ export const updateBrandService = async (req, next) => {
   try {
     let cloudinaryResponse = {};
     let brandName = "";
-    const brandID = req.query.brandId;
+    const brandID = req.params.brandId;
 
     // Find the brand first
     const data = await BrandModel.findById(brandID);
@@ -97,7 +97,7 @@ export const updateBrandService = async (req, next) => {
 
 export const deleteBrandService = async (req, next) => {
   try {
-    const brandID = req.query.brandId;
+    const brandID = req.params.brandId;
     const data = await BrandModel.findOneAndDelete({ _id: brandID });
     if (!data) {
       return { status: "fail", message: "Failed to delete Brand" };
@@ -114,7 +114,7 @@ export const deleteBrandService = async (req, next) => {
   }
 };
 
-export const listBrandService = async (req, next) => {
+export const getBrandListService = async (req, next) => {
   try {
     const data = await BrandModel.find().select("-createdAt -updatedAt");
     if (!data) {

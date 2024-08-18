@@ -1,10 +1,10 @@
 import express from "express";
 import * as AdminController from "../controllers/AdminController.js";
 import * as BrandController from "../controllers/BrandController.js";
-import * as CategoryController from "../controllers/CategoryContoller.js";
+import * as CategoryController from "../controllers/CategoryController.js";
 import * as ModelController from "../controllers/ModelController.js";
 import * as LocationController from "../controllers/LocationController.js";
-import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
+import AuthVerifyMiddleware from "../middlewares/AuthVerifyMiddleware.js";
 import { SendNotification } from "../middlewares/NotificationMiddleware.js";
 import { roleAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
@@ -16,415 +16,332 @@ import { idSchema } from "../request/IdSchema.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
 
 const adminRouter = express.Router();
+
+// _____________Auth________________//
 adminRouter.post(
   "/login",
-  validateRequest({
-    schema: adminSchemaUpdate,
-    isQuery: false,
-    isParam: false,
-  }),
-  AdminController.adminLogin
-);
-adminRouter.get(
-  "/adminProfileDetails",
-  AuthVerifyMiddlware,
-  AdminController.adminProfileDetails
+  validateRequest({ schema: adminSchemaUpdate }),
+  AdminController.login
 );
 
-adminRouter.post(
-  "/addAdmin",
-  validateRequest({
-    schema: adminSchemaCreate,
-    isQuery: false,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
-  roleAuthentication("SuperAdmin"),
-  AdminController.addNewAdmin
-);
+// _____________Profile________________//
 adminRouter.get(
-  "/deleteAdmin",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+  "/profile/:id?",
+  AuthVerifyMiddleware,
+  AdminController.getProfile
+);
+adminRouter.post(
+  "/admins",
+  validateRequest({ schema: adminSchemaCreate }),
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin"),
+  AdminController.createAdmin
+);
+adminRouter.put(
+  "/admins",
+  validateRequest({ schema: adminSchemaUpdate }),
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  AdminController.updateAdmin
+);
+adminRouter.delete(
+  "/admins/:id",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   AdminController.deleteAdmin
 );
 adminRouter.get(
-  "/adminList",
-  AuthVerifyMiddlware,
+  "/admins",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
-  AdminController.adminList
+  AdminController.getAdminList
 );
 adminRouter.get(
-  "/userList",
-  AuthVerifyMiddlware,
+  "/users",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
-  AdminController.userList
+  AdminController.getUserList
 );
 
+// _____________Manage Post________________//
 adminRouter.get(
-  "/reviewPostList",
-  AuthVerifyMiddlware,
+  "/posts/review",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.reviewPostList
-);
-
-adminRouter.get(
-  "/reviewPostIdList",
-  AuthVerifyMiddlware,
-  roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.reviewPostListIdOnly
-);
-
-adminRouter.get(
-  "/approvedPostList",
-  AuthVerifyMiddlware,
-  roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.approvedPostList
+  AdminController.getReviewPostList
 );
 adminRouter.get(
-  "/declinedPostList",
-  AuthVerifyMiddlware,
+  "/posts/review/ids",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.declinedPostList
+  AdminController.getReviewPostIds
 );
 adminRouter.get(
-  "/reportedPostList",
-  AuthVerifyMiddlware,
+  "/posts/approved",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.reportedPostList
+  AdminController.getApprovedPostList
 );
 adminRouter.get(
-  "/withdrawReport",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+  "/posts/declined",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  AdminController.getDeclinedPostList
+);
+adminRouter.get(
+  "/posts/reported",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  AdminController.getReportedPostList
+);
+adminRouter.post(
+  "/posts/:postId/withdraw-report",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.withdrawReport
 );
-adminRouter.get(
-  "/approvePost",
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/posts/approve",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.approvePost
 );
-adminRouter.get(
-  "/declinePost",
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/posts/decline",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.declinePost
 );
-adminRouter.get(
-  "/deletePost",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.delete(
+  "/posts/:postId/delete",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  SendNotification,
+  // SendNotification,
   AdminController.deletePost
 );
-adminRouter.get(
-  "/sendFeedback",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/feedback/:postId",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
+  // SendNotification,
   AdminController.sendFeedback
 );
 
+// _____________Manage Account________________//
 adminRouter.get(
-  "/warnedAccountList",
-  AuthVerifyMiddlware,
+  "/accounts/warned",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.warnedAccountList
+  AdminController.getWarnedAccountList
 );
 adminRouter.get(
-  "/restrictedAccountList",
-  AuthVerifyMiddlware,
+  "/accounts/restricted",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.restrictedAccountList
+  AdminController.getRestrictedAccountList
 );
-adminRouter.get(
-  "/withdrawRestrictions",
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/accounts/:userId/withdraw-restrictions",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.withdrawRestrictions
 );
-adminRouter.get(
-  "/warningAccount",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/accounts/:userId/warning",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.warningAccount
 );
-adminRouter.get(
-  "/restrictAccount",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/accounts/:userId/restrict",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.restrictAccount
 );
 adminRouter.get(
-  "/reviewNidList",
-  AuthVerifyMiddlware,
+  "/nid/review",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.reviewNidList
+  AdminController.getReviewNidList
 );
-
-adminRouter.get(
-  "/approveNid",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/nid/approve/:userId",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.approveNid
 );
-
-adminRouter.get(
-  "/declineNid",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.post(
+  "/nid/decline/:userId",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.declineNid
 );
 
-//Brand
+// _____________Category________________//
 adminRouter.post(
-  "/createBrand",
-  AuthVerifyMiddlware,
-  roleAuthentication("SuperAdmin"),
-  BrandController.createBrand
-);
-adminRouter.post(
-  "/updateBrand",
-  AuthVerifyMiddlware,
-  roleAuthentication("SuperAdmin"),
-  BrandController.updateBrand
-);
-adminRouter.get(
-  "/deleteBrand",
-  AuthVerifyMiddlware,
-  roleAuthentication("SuperAdmin"),
-  BrandController.deleteBrand
-);
-
-//Category
-adminRouter.post(
-  "/createCategory",
-  AuthVerifyMiddlware,
+  "/categories",
+  AuthVerifyMiddleware,
   upload.single("image"),
   roleAuthentication("SuperAdmin"),
   CategoryController.createCategory
 );
-adminRouter.post(
-  "/updateCategory",
-  AuthVerifyMiddlware,
+adminRouter.put(
+  "/categories/:categoryId",
+  AuthVerifyMiddleware,
   upload.single("image"),
   roleAuthentication("SuperAdmin"),
   CategoryController.updateCategory
 );
-adminRouter.get(
-  "/deleteCategory",
-  AuthVerifyMiddlware,
+adminRouter.delete(
+  "/categories/:categoryId",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   CategoryController.deleteCategory
 );
 
-//Sub Category
+// _____________Sub Category________________//
 adminRouter.post(
-  "/createSubCategory",
-  AuthVerifyMiddlware,
+  "/categories/:categoryId/subcategories",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   CategoryController.createSubCategory
 );
-
-adminRouter.post(
-  "/updateSubCategory",
-  AuthVerifyMiddlware,
+adminRouter.put(
+  "/categories/:categoryId/subcategories/:id",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   CategoryController.updateSubCategory
 );
-
-adminRouter.get(
-  "/deleteSubCategory",
-  AuthVerifyMiddlware,
+adminRouter.delete(
+  "/subcategories/:id",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   CategoryController.deleteSubCategory
 );
 
-//Model
+// _____________Brand________________//
 adminRouter.post(
-  "/createModel",
+  "/brands",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin"),
+  BrandController.createBrand
+);
+adminRouter.put(
+  "/brands/:brandId",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin"),
+  BrandController.updateBrand
+);
+adminRouter.delete(
+  "/brands/:brandId",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin"),
+  BrandController.deleteBrand
+);
 
-  AuthVerifyMiddlware,
+// _____________Model________________//
+adminRouter.post(
+  "/brands/:brandId/models",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   ModelController.createModel
 );
-adminRouter.post(
-  "/updateModel",
-  AuthVerifyMiddlware,
+adminRouter.put(
+  "/brands/:brandId/models/:id",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   ModelController.updateModel
 );
-adminRouter.get(
-  "/deleteModel",
-  AuthVerifyMiddlware,
+adminRouter.delete(
+  "/models/:id",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   ModelController.deleteModel
 );
 
-//Division
+// _____________Location________________//
 adminRouter.post(
-  "/createDivision",
-  AuthVerifyMiddlware,
+  "/locations/divisions",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.createDivision
 );
-adminRouter.post(
-  "/updateDivision",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.put(
+  "/locations/divisions/:id",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.updateDivision
 );
-adminRouter.get(
-  "/deleteDivision",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.delete(
+  "/locations/divisions/:id",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.deleteDivision
 );
-
 adminRouter.post(
-  "/createDistrict",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+  "/locations/:divisionId/districts",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.createDistrict
 );
-adminRouter.post(
-  "/updateDistrict",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.put(
+  "/locations/districts/:id",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.updateDistrict
 );
-adminRouter.get(
-  "/deleteDistrict",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.delete(
+  "/locations/districts/:id",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.deleteDistrict
 );
-
 adminRouter.post(
-  "/createArea",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+  "/locations/:districtId/areas",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.createArea
 );
-adminRouter.post(
-  "/updateArea",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.put(
+  "/locations/areas/:id",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.updateArea
 );
-adminRouter.get(
-  "/deleteArea",
-  validateRequest({
-    schema: idSchema,
-    isQuery: true,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
+adminRouter.delete(
+  "/locations/areas/:id",
+  validateRequest({ schema: idSchema, isParam: true }),
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.deleteArea
 );
 
-//Search Profile
+// _____________Search________________//
 adminRouter.get(
-  "/searchUser",
-  AuthVerifyMiddlware,
+  "/search/users",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.searchUser
 );
-
 adminRouter.get(
-  "/searchAdmin",
-  AuthVerifyMiddlware,
+  "/search/admins",
+  AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   AdminController.searchAdmin
-);
-
-//Update Profile
-adminRouter.post(
-  "/updateAdminProfile",
-  validateRequest({
-    schema: adminSchemaUpdate,
-    isQuery: false,
-    isParam: false,
-  }),
-  AuthVerifyMiddlware,
-  roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.updateAdminProfile
 );
 
 export default adminRouter;

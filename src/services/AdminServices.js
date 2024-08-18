@@ -127,6 +127,14 @@ export const updateAdminService = async (req, next) => {
     if (!admin) {
       return { status: "fail", message: "No profile found" };
     }
+
+    if (admin.role !== "SuperAdmin" && req.body.role === "SuperAdmin") {
+      return {
+        status: "fail",
+        message: "Only Super admin can change the role.",
+      };
+    }
+    
     //Assign the req.body values to admin document
     Object.assign(admin, req.body);
 
@@ -320,8 +328,9 @@ export const approvePostService = async (req, next) => {
         ]
           */
 
-    const postId = req.params.postId;
+    const postId = req.body.postId;
     const { id, name, role } = req.headers;
+
     inputSanitizer(postId);
 
     const data = await PostModel.updateMany(
@@ -340,6 +349,18 @@ export const approvePostService = async (req, next) => {
     );
     if (data.modifiedCount === 0) {
       return { status: "fail", message: "Failed to approve post" };
+    }
+
+    const adminResponse = await AdminModel.findOneAndUpdate(
+      { _id: id },
+      { $addToSet: { approvedPosts: { $each: postId } } }
+    );
+
+    if (!adminResponse) {
+      return {
+        status: "fail",
+        message: "Failed to update admin model with decline posts",
+      };
     }
 
     return { status: "success", data: [], message: "Posts Approved" };

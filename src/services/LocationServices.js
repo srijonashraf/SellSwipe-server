@@ -3,7 +3,6 @@ import DistrictModel from "./../models/DistrictModel.js";
 import mongoose from "mongoose";
 import AreaModel from "./../models/AreaModel.js";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
-const ObjectID = mongoose.Types.ObjectId;
 
 //Division
 export const createDivisionService = async (req, next) => {
@@ -152,40 +151,6 @@ export const createAreaService = async (req, next) => {
   }
 };
 
-// export const createAreaService = async (req,next) => {
-//   try {
-//     let DistrictID = new ObjectID(req.query.districtId);
-//     const areaNames = req.body.areaNames; // Assuming the array of area names is passed as 'areaNames'
-
-//     // Array to store created areas
-//     const createdAreas = [];
-
-//     for (let areaName of areaNames) {
-//       const areaData = { areaName: areaName, districtID: DistrictID };
-//       const createdArea = await AreaModel.create(areaData);
-//       createdAreas.push(createdArea);
-//     }
-
-//     if (createdAreas.length === 0) {
-//       return { status: "fail", message: "Failed to save any area" };
-//     } else {
-//       return { status: "success", data: createdAreas };
-//     }
-//   } catch (error) {
-//   next(error)
-//   }
-// };
-
-//Req body for this: {
-//   {"areaNames": [
-//     "Baliadangi",
-//        "Haripur",
-//        "Pirganj(Thakurgaon)",
-//        "Ranishankail",
-//        "Thakurgaon Sadar",
-//        "Shibganj (Thakurgaon Sadar)"
-//      ]
-//  }
 
 export const updateAreaService = async (req, next) => {
   try {

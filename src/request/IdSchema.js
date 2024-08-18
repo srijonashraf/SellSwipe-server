@@ -9,7 +9,7 @@ const objectIdValidator = (value, helpers) => {
   return value;
 };
 
-//Pattern is used here to receive any type of key but the value must meet the validation rule
+//Pattern is used here to receive any type of key but the value must satisfy the validation rule
 export const idSchema = Joi.object().pattern(
   Joi.string(), //key name not mentioned to accept any kind keys
   Joi.string().custom(objectIdValidator).required()

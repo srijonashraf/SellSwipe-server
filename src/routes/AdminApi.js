@@ -4,6 +4,7 @@ import * as BrandController from "../controllers/BrandController.js";
 import * as CategoryController from "../controllers/CategoryController.js";
 import * as ModelController from "../controllers/ModelController.js";
 import * as LocationController from "../controllers/LocationController.js";
+import * as LegalController from "../controllers/LegalController.js";
 import AuthVerifyMiddleware from "../middlewares/AuthVerifyMiddleware.js";
 import { SendNotification } from "../middlewares/NotificationMiddleware.js";
 import { roleAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
@@ -14,6 +15,7 @@ import {
 } from "../request/AdminSchema.js";
 import { idSchema } from "../request/IdSchema.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
+import { legalSchemaCreate, legalSchemaUpdate } from './../request/LegalSchema.js';
 
 const adminRouter = express.Router();
 
@@ -328,6 +330,31 @@ adminRouter.delete(
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   LocationController.deleteArea
+);
+
+// _____________Legals________________//
+adminRouter.post(
+  "/legals",
+  validateRequest({schema:legalSchemaCreate, isParam:false, isQuery:false}),
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  LegalController.createLegal
+);
+
+adminRouter.put(
+  "/legals/:id",
+  validateRequest({schema:legalSchemaUpdate, isParam:true, isQuery:false}),
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  LegalController.updateLegal
+);
+
+adminRouter.delete(
+  "/legals/:id",
+  validateRequest({schema:legalSchemaUpdate, isParam:true, isQuery:false}),
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  LegalController.deleteLegal
 );
 
 // _____________Search________________//

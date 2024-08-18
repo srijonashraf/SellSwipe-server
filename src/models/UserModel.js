@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt, { genSalt } from "bcrypt";
+import bcrypt from "bcrypt";
 
 const UserSchema = mongoose.Schema(
   {
@@ -77,7 +77,7 @@ const UserSchema = mongoose.Schema(
     },
     sessionId: {
       type: [mongoose.Schema.Types.ObjectId],
-      ref: "sessiondetails", //It will connect a reference to SessionModel which will make it easier to extract value in UserModel from SessionModel
+      ref: "sessiondetails", //It will add a reference to SessionModel which makes it easier to extract value in UserModel from SessionModel
     },
     loginAttempt: {
       type: Number,
@@ -93,9 +93,14 @@ const UserSchema = mongoose.Schema(
   }
 );
 
+UserSchema.path("email").validate(async (email) => {
+  const emailCount = await mongoose.models.user.countDocuments({ email });
+  return !emailCount;
+}, "Email already exists");
+
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    return next(); // Skip hashing if password is not modified
+    return next();
   }
   try {
     const salt = await bcrypt.genSalt(10);
@@ -103,7 +108,7 @@ UserSchema.pre("save", async function (next) {
   } catch (error) {
     console.error("Error hashing password: ", error);
   }
-  next(); 
+  next();
 });
 
 UserSchema.methods.isPasswordCorrect = async function (password) {

@@ -94,8 +94,6 @@ privateRouter.put(
   PostController.updatePost
 );
 
-
-
 privateRouter.delete(
   "/posts/:id",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
@@ -143,5 +141,13 @@ privateRouter.get(
   AuthVerifyMiddlware,
   UserController.inActivePost
 );
+
+privateRouter.post(
+  "/posts/similar",
+  validateRequest({ schema: idSchema, isQuery: false, isParam: false }),
+  AuthVerifyMiddlware,
+  PostController.getSimilarPosts
+);
+
 
 export default privateRouter;

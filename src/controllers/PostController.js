@@ -6,7 +6,7 @@ import {
   getAllPostsService,
   getPendingPostByUserService,
   getPostByUserService,
-  postListByFilterService,
+  getSimilarPostsService,
   postSearchWithFiltersService,
   updatePostService,
 } from "./../services/PostServices.js";
@@ -51,8 +51,8 @@ export const getAllPosts = async (req, res, next) => {
   return res.status(200).json(result);
 };
 
-export const postListByFilter = async (req, res, next) => {
-  let result = await postListByFilterService(req, next);
+export const getSimilarPosts = async (req, res, next) => {
+  let result = await getSimilarPostsService(req, next);
   return res.status(200).json(result);
 };
 

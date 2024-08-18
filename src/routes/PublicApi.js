@@ -26,7 +26,6 @@ publicRouter.get(
   LocationController.getAreaList
 );
 publicRouter.get("/posts/all-post", PostController.getAllPosts);
-publicRouter.get("/posts/filter", PostController.postListByFilter);
 publicRouter.get("/posts/search", PostController.postSearchWithFilters);
 
 publicRouter.post(

@@ -640,204 +640,83 @@ export const getAllPostsService = async (req, next) => {
   }
 };
 
-//Post Filter Only
-
-export const postListByFilterService = async (req, next) => {
-  /**
-   * postListByFilterService - This service fetches posts based on filter criteria.
-   * It accepts filters like division, district, area, brandId, categoryId, modelId, minPrice, and maxPrice,
-   * and returns a list of posts that match the criteria.
-   * Example request body:
-   * {
-   *   "divisionId": "66282c9fea9e63ce21b4f83a",
-   *   "districtId": "66282c9fea9e63ce21b4f83b",
-   *   "areaId": "66282c9fea9e63ce21b4f83c",
-   *   "brandId": "66282c9fea9e63ce21b4f83d",
-   *   "categoryId": "66282c9fea9e63ce21b4f83e",
-   *   "minPrice": 100,
-   *   "maxPrice": 1000
-   * }
-   */
+export const getSimilarPostsService = async (req, next) => {
   try {
-    // Sanitize the input from the request body
-    const reqBody = req.body;
-    inputSanitizer(reqBody);
-    const {
-      divisionId,
-      districtId,
-      areaId,
-      brandId,
-      categoryId,
-      modelId,
-      minPrice,
-      maxPrice,
-    } = reqBody;
+    const { categoryID, brandID } = req.body;
 
-    // Build the initial query object with basic filtering conditions
-    const query = {
-      isApproved: true,
-      isActive: true,
-      onReview: false,
-      isDeclined: false,
-      isDeleted: false,
+    const postValidationQuery = {
+      "post.isApproved": true,
+      "post.isActive": true,
+      "post.onReview": false,
+      "post.isDeclined": false,
+      "post.isDeleted": false,
     };
 
-    // Add division, district, and area filters if provided
-    if (divisionId) query.divisionID = new ObjectID(divisionId);
-    if (districtId) query.districtID = new ObjectID(districtId);
-    if (areaId) query.areaID = new ObjectID(areaId);
-
-    // Price filter based on both price and discountPrice
-    const priceFilter = {
-      $or: [
-        {
-          $and: [
-            { discount: true },
-            {
-              discountPrice: {
-                $gte: parseInt(minPrice) || 0,
-                $lte: parseInt(maxPrice) || Infinity,
-              },
-            },
-          ],
+    //We will fetch some random data so that each time it doesn't show the same similar posts
+    const data = await PostDetailsModel.aggregate([
+      {
+        $match: {
+          categoryID: new ObjectID(categoryID),
+          brandID: new ObjectID(brandID),
         },
-        {
-          price: {
-            $gte: parseInt(minPrice) || 0,
-            $lte: parseInt(maxPrice) || Infinity,
-          },
+      },
+      { $sample: { size: 10 } },
+      {
+        $lookup: {
+          from: "posts",
+          localField: "postID",
+          foreignField: "_id",
+          as: "post",
         },
-      ],
-    };
-
-    // Add the price filter to the query
-    query.$and = [priceFilter];
-
-    // Add brandId and categoryId filters if provided
-    if (brandId || categoryId) {
-      const postDetailsFilter = {};
-      if (brandId)
-        postDetailsFilter["postdetails.brandID"] = new ObjectID(brandId);
-      if (categoryId)
-        postDetailsFilter["postdetails.categoryID"] = new ObjectID(categoryId);
-      if (modelId)
-        postDetailsFilter["postdetails.modelID"] = new ObjectID(modelId);
-
-      query.$and.push(postDetailsFilter);
-    }
-
-    // Perform aggregation to retrieve posts and related data from different collections
-    const data = await PostModel.aggregate([
+      },
       {
         $lookup: {
           from: "users",
-          localField: "userID",
+          localField: "post.userID",
           foreignField: "_id",
           as: "user",
         },
       },
       {
-        $lookup: {
-          from: "postdetails",
-          localField: "_id",
-          foreignField: "postID",
-          as: "postdetails",
+        $unwind: {
+          path: "$post",
         },
       },
       {
-        $lookup: {
-          from: "divisions",
-          localField: "divisionID",
-          foreignField: "_id",
-          as: "division",
+        $unwind: {
+          path: "$user",
         },
       },
       {
-        $lookup: {
-          from: "districts",
-          localField: "districtID",
-          foreignField: "_id",
-          as: "district",
-        },
+        $match: postValidationQuery
       },
-      {
-        $lookup: {
-          from: "areas",
-          localField: "areaID",
-          foreignField: "_id",
-          as: "area",
-        },
-      },
-      {
-        $unwind: "$user",
-      },
-      {
-        $unwind: "$postdetails",
-      },
-      {
-        $unwind: "$division",
-      },
-      {
-        $unwind: "$district",
-      },
-      {
-        $unwind: "$area",
-      },
-      {
-        $match: {
-          $and: [
-            query,
-            { "user.accountStatus": { $in: ["Validate", "Warning"] } }, // Ensure the user has a valid account status
-          ],
-        },
-      },
-      {
-        $sort: { createdAt: -1 }, // Sort posts by creation date in descending order
-      },
-
       {
         $project: {
-          _id: 1,
-          user: {
-            _id: "$user._id",
-            name: "$user.name",
-          },
-          title: 1,
-          mainImg: 1,
-          price: 1,
-          discount: 1,
-          discountPrice: 1,
-          stock: 1,
-          isActive: 1,
-          editCount: 1,
-          viewsCount: 1,
-          "division._id": 1,
-          "division.divisionName": 1,
-          "district._id": 1,
-          "district.districtName": 1,
-          "area._id": 1,
-          "area.areaName": 1,
-          address: 1,
-          createdAt: 1,
-          updatedAt: 1,
+          "post.title": 1,
+          "post.price": 1,
+          "post.discount": 1,
+          "post.discountPrice": 1,
+          "post.mainImg": 1,
+          "post.stock": 1,
+          "post.viewsCount": 1,
+          "post.createdAt": 1,
+          "post.updatedAt": 1,
+          "user._id": 1,
+          "user.name": 1,
         },
       },
     ]);
 
-    // Check if no data was found and return an appropriate response
     if (!data) {
-      return { status: "fail", data: [] };
+      return { status: "fail", message: "No post found" };
     }
-
-    // Return success response with the total number of posts and the data
     return { status: "success", total: data.length, data: data };
   } catch (error) {
-    // Pass any errors to the next middleware
     next(error);
   }
 };
 
-//Post Filter + Search
+//Post Search and Filter
 
 /**
  * postSearchWithFiltersService - A service to search posts based on keyword and apply various filters.
@@ -855,7 +734,6 @@ export const postSearchWithFiltersService = async (req, next) => {
   try {
     let { keyword } = req.query;
     let keyWordRegex = { $regex: keyword, $options: "i" };
-    console.log(keyWordRegex);
     /**
      * The postdetails, division, district, area are separate collections,
      * so we have to join them first (using $lookup) and then unwind them

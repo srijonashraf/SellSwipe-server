@@ -6,7 +6,6 @@ import * as ModelController from "../controllers/ModelController.js";
 import * as LocationController from "../controllers/LocationController.js";
 import * as LegalController from "../controllers/LegalController.js";
 import AuthVerifyMiddleware from "../middlewares/AuthVerifyMiddleware.js";
-import { SendNotification } from "../middlewares/NotificationMiddleware.js";
 import { roleAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
@@ -120,7 +119,6 @@ adminRouter.delete(
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  // SendNotification,
   AdminController.deletePost
 );
 adminRouter.post(
@@ -128,7 +126,6 @@ adminRouter.post(
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  // SendNotification,
   AdminController.sendFeedback
 );
 
@@ -359,16 +356,24 @@ adminRouter.delete(
 
 // _____________Search________________//
 adminRouter.get(
-  "/search/users",
+  "/users/search",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.searchUser
 );
 adminRouter.get(
-  "/search/admins",
+  "/admins/search",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
   AdminController.searchAdmin
+);
+
+// _____________Email________________//
+adminRouter.post(
+  "/promotional/send",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin","Admin"),
+  AdminController.sendPromotionalEmail
 );
 
 export default adminRouter;

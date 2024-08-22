@@ -17,6 +17,9 @@ const ProductSliderSchema = mongoose.Schema(
   }
 );
 
-const ProductSliderModel = ("productsliders", ProductSliderSchema);
+const ProductSliderModel = mongoose.model(
+  "productsliders",
+  ProductSliderSchema
+);
 
 export default ProductSliderModel;

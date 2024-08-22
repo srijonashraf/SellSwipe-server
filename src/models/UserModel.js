@@ -6,8 +6,6 @@ const UserSchema = mongoose.Schema(
     email: {
       type: String,
       unique: true,
-      lowercase: true,
-      immutable: true, // Can't be changed
     },
     name: {
       type: String,
@@ -92,11 +90,6 @@ const UserSchema = mongoose.Schema(
     versionKey: false,
   }
 );
-
-UserSchema.path("email").validate(async (email) => {
-  const emailCount = await mongoose.models.user.countDocuments({ email });
-  return !emailCount;
-}, "Email already exists");
 
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {

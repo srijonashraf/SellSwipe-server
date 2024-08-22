@@ -9,7 +9,17 @@ import {
 import mongoose from "mongoose";
 import PostDetailsModel from "../models/PostDetailsModel.js";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
-
+import {
+  promotionalEmailTemplate,
+  restrictAccountTemplate,
+  warningAccountTemplate,
+} from "./../templates/emailTemplates.js";
+import EmailSend from "../utils/EmailUtility.js";
+import PromotionsModel from "../models/PromotionsModel.js";
+import {
+  notifications,
+  sendNotification,
+} from "../utils/NotificationsUtility.js";
 const ObjectID = mongoose.Types.ObjectId;
 
 export const loginService = async (req, next) => {
@@ -134,7 +144,7 @@ export const updateAdminService = async (req, next) => {
         message: "Only Super admin can change the role.",
       };
     }
-    
+
     //Assign the req.body values to admin document
     Object.assign(admin, req.body);
 
@@ -428,6 +438,11 @@ export const deletePostService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
     const postID = req.params.postId;
+    await sendNotification({
+      notificationType: notifications.DELETE_POST,
+      postId: postID,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
 
     // Start the transaction
     session.startTransaction();
@@ -498,6 +513,11 @@ export const sendFeedbackService = async (req, next) => {
     if (!data) {
       return { status: "fail", message: "Failed to send feedback" };
     }
+    await sendNotification({
+      notificationType: notifications.FEEDBACK_POST,
+      postId: postID,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
 
     return { status: "success", data: data };
   } catch (error) {
@@ -572,6 +592,19 @@ export const warningAccountService = async (req, next) => {
       };
     }
 
+    await sendNotification({
+      notificationType: notifications.WARNING_ACCOUNT,
+      userId: userId,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
+
+    const emailTemplate = warningAccountTemplate({ name: data.name });
+    await EmailSend(
+      data.email,
+      emailTemplate.subject,
+      emailTemplate.htmlContent
+    );
+
     return { status: "success", data: data };
   } catch (error) {
     next(error);
@@ -601,6 +634,13 @@ export const restrictAccountService = async (req, next) => {
       };
     }
 
+    //Send email
+    const emailTemplate = restrictAccountTemplate({ name: data.name });
+    await EmailSend(
+      data.email,
+      emailTemplate.subject,
+      emailTemplate.htmlContent
+    );
     return { status: "success", data: data };
   } catch (error) {
     next(error);
@@ -756,6 +796,41 @@ export const searchAdminService = async (req, next) => {
       return { status: "fail", message: "No account found" };
     }
     return { status: "success", total: response.length, data: response };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendPromotionalEmailService = async (req, next) => {
+  try {
+    let emailTemplates = {};
+    const { subject, title, content, userList } = req.body;
+    if (!subject || !title || !content || !userList) {
+      return {
+        status: "fail",
+        message: "Any of the required field is empty, failed to send emails",
+      };
+    }
+
+    const data = await PromotionsModel.create(req.body);
+
+    userList.forEach((user) => {
+      emailTemplates[user.email] = promotionalEmailTemplate({
+        subject: subject,
+        title: title,
+        name: user.name,
+        content: content,
+      });
+    });
+
+    for (let user in emailTemplates) {
+      await EmailSend(
+        user,
+        emailTemplates[user].subject,
+        emailTemplates[user].htmlContent
+      );
+    }
+    return { status: "success", message: "All emails sent successfully" };
   } catch (error) {
     next(error);
   }

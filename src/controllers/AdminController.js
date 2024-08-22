@@ -22,6 +22,7 @@ import {
   searchAdminService,
   searchUserService,
   sendFeedbackService,
+  sendPromotionalEmailService,
   updateAdminService,
   warningAccountService,
   withdrawReportService,
@@ -165,5 +166,10 @@ export const searchUser = async (req, res, next) => {
 
 export const searchAdmin = async (req, res, next) => {
   const result = await searchAdminService(req, next);
+  res.status(200).json(result);
+};
+
+export const sendPromotionalEmail = async (req, res, next) => {
+  const result = await sendPromotionalEmailService(req, next);
   res.status(200).json(result);
 };

@@ -149,5 +149,23 @@ privateRouter.post(
   PostController.getSimilarPosts
 );
 
+//______Notification Actions______
+privateRouter.post(
+  "/notifications/:id/seen",
+  AuthVerifyMiddlware,
+  UserController.markSingleNotification
+);
+
+privateRouter.post(
+  "/notifications/seen",
+  AuthVerifyMiddlware,
+  UserController.markAllNotification
+);
+
+privateRouter.get(
+  "/notifications",
+  AuthVerifyMiddlware,
+  UserController.getAllNotification
+);
 
 export default privateRouter;

@@ -2,31 +2,29 @@ import mongoose from "mongoose";
 
 const NotificationSchema = mongoose.Schema(
   {
-    path: {
+    type: {
       type: String,
       required: true,
     },
-    type:{
-      type: String,
-      required: true,
-    },
-    message: {
+    title: {
       type: String,
     },
-    senderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-    },
-    senderRole: {
+    description: {
       type: String,
-      required: true,
+    },
+    sender: {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+      },
+      role: { type: String, required: true },
     },
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
-    timestamp: {
-      type: String,
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
     },
     isRead: {
       type: Boolean,

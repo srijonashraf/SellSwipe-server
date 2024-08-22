@@ -1,6 +1,5 @@
 import PostModel from "../models/PostModel.js";
 import NotificationModel from "./../models/NotificationModel.js";
-import { messageConfig } from "../constants/Notifications.js";
 
 //Todo: Need to modify this function cause all the req.paths are not same and generic. Some of them using params some of them using query
 export const SendNotification = async (req, res, next) => {

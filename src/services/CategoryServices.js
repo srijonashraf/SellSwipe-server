@@ -1,9 +1,9 @@
 import CategoryModel from "./../models/CategoryModel.js";
-import { removeUnusedLocalFile } from "./../helper/RemoveUnusedFilesHelper.js";
+import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import {
   destroyOnCloudinary,
   uplaodOnCloudinaryWebAssets,
-} from "./../utility/Cloudinary.js";
+} from "../utils/CloudinaryUtility.js";
 
 export const createCategoryService = async (req, next) => {
   try {

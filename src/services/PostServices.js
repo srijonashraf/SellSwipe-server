@@ -3,10 +3,10 @@ import PostModel from "../models/PostModel.js";
 import {
   destroyOnCloudinary,
   uploadOnCloudinary,
-} from "../utility/Cloudinary.js";
+} from "../utils/CloudinaryUtility.js";
 import PostDetailsModel from "./../models/PostDetailsModel.js";
-import mapData from "../utility/MapData.js";
-import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
+import mapData from "../utils/MappingUtility.js";
+import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import { inputSanitizer } from "./../middlewares/RequestValidateMiddleware.js";
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -468,7 +468,6 @@ export const deletePostImagesService = async (req, next) => {
     const postID = new ObjectID(req.params.id);
     const pid = req.query.pid;
 
-    // Find the post data
     const postData = await PostModel.findOne({
       _id: postID,
       userID: req.headers.id,

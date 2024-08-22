@@ -10,20 +10,17 @@ import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
   userCredentialSchema,
   userSchemaCreate,
-} from "../request/UserSchema.js";
+} from "../requests/UserSchema.js";
 
 const publicRouter = express.Router();
 
-/**
- * Categories, Brands, and Models Endpoints
- */
+
+//_________Categories, Brands, and Models Endpoints__________//
 publicRouter.get("/categories", CategoryContoller.getCategoryList);
 publicRouter.get("/brands", BrandController.getBrandList);
 publicRouter.get("/models/:brandId", ModelController.getModelList);
 
-/**
- * Location Endpoints
- */
+//_________Location Endpoints__________//
 publicRouter.get("/locations/divisions", LocationController.getDivisionList);
 publicRouter.get(
   "/locations/:divisionId/districts",
@@ -34,20 +31,14 @@ publicRouter.get(
   LocationController.getAreaList
 );
 
-/**
- * Legal Information Endpoints
- */
+//_________Legal Informations Endpoints__________//
 publicRouter.get("/legals", LegalController.getLegalList);
 
-/**
- * Posts Endpoints
- */
+//_________Posts__________//
 publicRouter.get("/posts/all-post", PostController.getAllPosts);
 publicRouter.get("/posts/search", PostController.postSearchWithFilters);
 
-/**
- * Authentication Endpoints
- */
+//_________Auth Endpoints__________//
 publicRouter.post(
   "/auth/register",
   validateRequest({ schema: userSchemaCreate, isParam: false, isQuery: false }),
@@ -65,7 +56,6 @@ publicRouter.post(
 );
 
 /**
- * Email Verification and Password Reset Endpoints
  * sendVerificationEmail and sendResetPasswordEmail are for external API calls.
  * Internally, sendAuthEmail handles auth verification and password resets.
  */

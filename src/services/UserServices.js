@@ -3,31 +3,31 @@ import UserModel from "./../models/UserModel.js";
 import {
   destroyOnCloudinary,
   uploadOnCloudinary,
-} from "../utility/Cloudinary.js";
+} from "../utils/CloudinaryUtility.js";
 import {
   generateAccessToken,
   generateRefreshToken,
-} from "../helper/TokenGeneratorHelper.js";
+} from "../utils/TokenUtility.js";
 import SessionDetailsModel from "../models/SessionDetailsModel.js";
 import OtpModel from "./../models/OtpModel.js";
-import EmailSend from "../helper/EmailHelper.js";
+import EmailSend from "../utils/EmailUtility.js";
 import {
   afterEmailVerificationTemplate,
   afterResetPasswordTemplate,
   emailVerificationTemplate,
   resetPasswordTemplate,
-} from "../emailTemplate/SendEmailTemplate.js";
+} from "../templates/emailTemplates.js";
 import dotenv from "dotenv";
 import validator from "validator";
 import Joi from "joi";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 import { currentTime } from "./../constants/CurrectTime.js";
-import { fetchLocation } from "./../helper/LocationHelper.js";
-import { removeUnusedLocalFile } from "./../helper/RemoveUnusedFilesHelper.js";
+import { fetchLocation } from "../utils/LocationUtility.js";
+import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import PostModel from "../models/PostModel.js";
 import FavouriteModel from "../models/FavouriteModel.js";
 import { errorCodes } from "../constants/ErrorCodes.js";
-import { generateOtpAndLink } from "../utility/OtpandLink.js";
+import { otpLinkUtility } from "../utils/OtpLinkUtility.js";
 import { emailTypes } from "./../constants/emailTypes.js";
 dotenv.config();
 
@@ -263,7 +263,7 @@ export const updateNidService = async (req, next) => {
       cleanupLocalFiles(req.files);
       return {
         status: "fail",
-        message: "An approval request is pending already.",
+        message: "An approval requests is pending already.",
       };
     }
 
@@ -374,7 +374,7 @@ export const sendAuthEmailsService = async ({ req, emailType, next }) => {
     if (!user) {
       return { status: "fail", message: "No registered user found" };
     }
-    const { otp, link } = await generateOtpAndLink(
+    const { otp, link } = await otpLinkUtility(
       req,
       email,
       user._id,

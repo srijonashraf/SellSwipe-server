@@ -44,7 +44,7 @@ export const validateRequest = ({
       });
     }
 
-    // Set the validated value back only for the relevant part of the request
+    // Set the validated value back only for the relevant part of the requests
     if (isParam) {
       req.params = validationResult.value;
     } else if (isQuery) {

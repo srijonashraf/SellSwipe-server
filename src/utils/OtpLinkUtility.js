@@ -6,7 +6,7 @@ import { currentTime } from "../constants/CurrectTime.js";
 import { emailTypes } from "../constants/emailTypes.js";
 import { verificationTypes } from "../constants/verificationTypes.js";
 dotenv.config();
-export const generateOtpAndLink = async (req, email, userId, emailType) => {
+export const otpLinkUtility = async (req, email, userId, emailType) => {
   let otp = Math.floor(100000 + Math.random() * 900000);
   let token = jwt.sign({ email }, process.env.JWT_GENERAL_TOKEN_SECRET, {
     expiresIn: process.env.TOKEN_EXPIRE_TIME,

@@ -4,10 +4,10 @@ import * as UserController from "../controllers/UserController.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
 import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
-import { postSchemaCreate, postSchemaUpdate } from "../request/PostSchema.js";
-import { userSchemaUpdate } from "../request/UserSchema.js";
+import { postSchemaCreate, postSchemaUpdate } from "../requests/PostSchema.js";
+import { userSchemaUpdate } from "../requests/UserSchema.js";
 import { PrePostValidation } from "../middlewares/PrePostValidationMiddleware.js";
-import { idSchema } from "../request/IdSchema.js";
+import { idSchema } from "../requests/IdSchema.js";
 
 const privateRouter = express.Router();
 

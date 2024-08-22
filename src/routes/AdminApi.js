@@ -12,10 +12,10 @@ import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
   adminSchemaCreate,
   adminSchemaUpdate,
-} from "../request/AdminSchema.js";
-import { idSchema } from "../request/IdSchema.js";
+} from "../requests/AdminSchema.js";
+import { idSchema } from "../requests/IdSchema.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
-import { legalSchemaCreate, legalSchemaUpdate } from './../request/LegalSchema.js';
+import { legalSchemaCreate, legalSchemaUpdate } from '../requests/LegalSchema.js';
 
 const adminRouter = express.Router();
 

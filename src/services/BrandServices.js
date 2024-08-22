@@ -1,8 +1,8 @@
-import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
+import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import {
   destroyOnCloudinary,
   uplaodOnCloudinaryWebAssets,
-} from "../utility/Cloudinary.js";
+} from "../utils/CloudinaryUtility.js";
 import BrandModel from "./../models/BrandModel.js";
 export const createBrandService = async (req, next) => {
   try {

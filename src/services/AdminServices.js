@@ -5,7 +5,7 @@ import PostModel from "./../models/PostModel.js";
 import {
   generateAccessToken,
   generateRefreshToken,
-} from "./../helper/TokenGeneratorHelper.js";
+} from "../utils/TokenUtility.js";
 import mongoose from "mongoose";
 import PostDetailsModel from "../models/PostDetailsModel.js";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
@@ -658,7 +658,7 @@ export const approveNidService = async (req, next) => {
 
     return {
       status: "success",
-      message: "NID request Approved",
+      message: "NID requests Approved",
       data: data,
     };
   } catch (error) {
@@ -696,7 +696,7 @@ export const declineNidService = async (req, next) => {
 
     return {
       status: "success",
-      message: "NID request Declined",
+      message: "NID requests Declined",
       data: data,
     };
   } catch (error) {

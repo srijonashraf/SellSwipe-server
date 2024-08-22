@@ -1,5 +1,5 @@
 import { errorCodes } from "../constants/ErrorCodes.js";
-import { removeUnusedLocalFile } from "../helper/RemoveUnusedFilesHelper.js";
+import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import UserModel from "../models/UserModel.js";
 
 export const PrePostValidation = async (req, res, next) => {

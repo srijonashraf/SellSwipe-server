@@ -298,10 +298,11 @@ export const getReportedPostListService = async (req, next) => {
 
 export const withdrawReportService = async (req, next) => {
   try {
+    const { postId, id } = req.params; //id is report id
     const data = await PostModel.findOneAndUpdate(
-      { _id: req.params.postId },
+      { _id: postId, "reportedBy._id": id },
       {
-        $pull: { reportedBy: { _id: req.body.reportId } },
+        $pull: { reportedBy: { _id: id } },
         $inc: { reportCount: -1 },
       },
       {

@@ -97,7 +97,7 @@ adminRouter.get(
   AdminController.getReportedPostList
 );
 adminRouter.post(
-  "/posts/:postId/withdraw-report",
+  "/posts/:postId/withdraw-report/:id",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   AdminController.withdrawReport

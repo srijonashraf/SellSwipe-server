@@ -12,6 +12,7 @@ const UserSchema = mongoose.Schema(
     },
     role: {
       type: String,
+      enum: ["User"],
       default: "User",
     },
     avatar: {
@@ -62,7 +63,8 @@ const UserSchema = mongoose.Schema(
     },
     accountStatus: {
       type: String,
-      default: "Validate", //Validate, Warning, Restricted
+      enum: ["Validate", "Warning", "Restricted"],
+      default: "Validate",
     },
     warningCount: {
       type: Number,

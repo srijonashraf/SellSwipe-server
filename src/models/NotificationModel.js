@@ -23,8 +23,8 @@ const NotificationSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
-    postId: {
-      type: mongoose.Schema.Types.ObjectId,
+    reference: {
+      type: Object,
     },
     isRead: {
       type: Boolean,

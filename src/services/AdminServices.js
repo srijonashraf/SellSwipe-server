@@ -17,8 +17,8 @@ import {
 import EmailSend from "../utils/EmailUtility.js";
 import PromotionsModel from "../models/PromotionsModel.js";
 import {
-  notifications,
-  sendNotification,
+  notificationsForUser,
+  sendNotificationToUser,
 } from "../utils/NotificationsUtility.js";
 const ObjectID = mongoose.Types.ObjectId;
 
@@ -438,8 +438,8 @@ export const deletePostService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
     const postID = req.params.postId;
-    await sendNotification({
-      notificationType: notifications.DELETE_POST,
+    await sendNotificationToUser({
+      notificationType: notificationsForUser.DELETE_POST,
       postId: postID,
       sender: { id: req.headers.id, role: req.headers.role },
     });
@@ -513,8 +513,8 @@ export const sendFeedbackService = async (req, next) => {
     if (!data) {
       return { status: "fail", message: "Failed to send feedback" };
     }
-    await sendNotification({
-      notificationType: notifications.FEEDBACK_POST,
+    await sendNotificationToUser({
+      notificationType: notificationsForUser.FEEDBACK_POST,
       postId: postID,
       sender: { id: req.headers.id, role: req.headers.role },
     });
@@ -592,8 +592,8 @@ export const warningAccountService = async (req, next) => {
       };
     }
 
-    await sendNotification({
-      notificationType: notifications.WARNING_ACCOUNT,
+    await sendNotificationToUser({
+      notificationType: notificationsForUser.WARNING_ACCOUNT,
       userId: userId,
       sender: { id: req.headers.id, role: req.headers.role },
     });

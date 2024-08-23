@@ -110,7 +110,7 @@ privateRouter.get(
 //______Posts Actions______
 privateRouter.post(
   "/posts/:id/report",
-  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
+  validateRequest({ schema: idSchema, isQuery: false, isParam: true }),
   AuthVerifyMiddlware,
   UserController.reportPost
 );

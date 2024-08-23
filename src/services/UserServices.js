@@ -30,6 +30,11 @@ import { errorCodes } from "../constants/ErrorCodes.js";
 import { otpLinkUtility } from "../utils/OtpLinkUtility.js";
 import { emailTypes } from "./../constants/emailTypes.js";
 import NotificationModel from "./../models/NotificationModel.js";
+import {
+  notificationsForAdmin,
+  sendNotificationToAdmin,
+} from "../utils/NotificationsUtility.js";
+import { reportTypes } from "./../constants/ReportTypes.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -707,6 +712,15 @@ export const reportPostService = async (req, next) => {
         message: "A report is already pending or failed to report the post",
       };
     }
+
+    await sendNotificationToAdmin({
+      notificationType: notificationsForAdmin.REPORT_TO_ADMIN,
+      notificationTitle: reportTypes.HATE_SPEECH,
+      notificationDescription: reportCause,
+      postId: postID,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
+
     return {
       status: "success",
       message: "Report has been submitted successfully.",

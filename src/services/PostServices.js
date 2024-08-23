@@ -8,6 +8,7 @@ import PostDetailsModel from "./../models/PostDetailsModel.js";
 import mapData from "../utils/MappingUtility.js";
 import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import { inputSanitizer } from "./../middlewares/RequestValidateMiddleware.js";
+import { calculatePagination } from "./../utils/PaginationUtility.js";
 
 const ObjectID = mongoose.Types.ObjectId;
 
@@ -544,6 +545,13 @@ export const deletePostImagesService = async (req, next) => {
 
 export const getAllPostsService = async (req, next) => {
   try {
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
     const data = await PostModel.aggregate([
       {
         $match: {
@@ -554,7 +562,13 @@ export const getAllPostsService = async (req, next) => {
           isDeclined: false,
         },
       },
-      { $sort: { createdAt: -1 } },
+      {
+        $sort: {
+          [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1,
+        },
+      },
+      { $limit: pagination.limit },
+      { $skip: pagination.skip },
       {
         $lookup: {
           from: "users",
@@ -633,7 +647,23 @@ export const getAllPostsService = async (req, next) => {
       },
     ]);
 
-    return { status: "success", data: data };
+    const totalPosts = await PostModel.countDocuments({
+      isApproved: true,
+      isActive: true,
+      isDeleted: false,
+      onReview: false,
+      isDeclined: false,
+    });
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalPosts / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -687,7 +717,7 @@ export const getSimilarPostsService = async (req, next) => {
         },
       },
       {
-        $match: postValidationQuery
+        $match: postValidationQuery,
       },
       {
         $project: {
@@ -731,8 +761,15 @@ export const getSimilarPostsService = async (req, next) => {
  */
 export const postSearchWithFiltersService = async (req, next) => {
   try {
-    let { keyword } = req.query;
+    let { keyword, page, limit, sortBy, sortOrder } = req.query;
     let keyWordRegex = { $regex: keyword, $options: "i" };
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
     /**
      * The postdetails, division, district, area are separate collections,
      * so we have to join them first (using $lookup) and then unwind them
@@ -892,20 +929,48 @@ export const postSearchWithFiltersService = async (req, next) => {
         },
       },
       {
-        $project: {
-          title: 1,
-          price: 1,
-          discount: 1,
-          discountPrice: 1,
-          mainImg: 1,
-          stock: 1,
-          viewsCount: 1,
-          "division._id": 1,
-          "division.divisionName": 1,
-          "district._id": 1,
-          "district.districtName": 1,
-          "area._id": 1,
-          "area.areaName": 1,
+        $sort: {
+          [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1,
+        },
+      },
+      {
+        $facet: {
+          totalCount: [
+            {
+              $count: "count",
+            },
+          ],
+          paginatedResults: [
+            { $limit: pagination.limit },
+            { $skip: pagination.skip },
+            {
+              $project: {
+                _id: 1,
+                user: {
+                  _id: "$user._id",
+                  name: "$user.name",
+                },
+                title: 1,
+                mainImg: 1,
+                price: 1,
+                discount: 1,
+                discountPrice: 1,
+                stock: 1,
+                isActive: 1,
+                editCount: 1,
+                viewsCount: 1,
+                "division._id": 1,
+                "division.divisionName": 1,
+                "district._id": 1,
+                "district.districtName": 1,
+                "area._id": 1,
+                "area.areaName": 1,
+                address: 1,
+                createdAt: 1,
+                updatedAt: 1,
+              },
+            },
+          ],
         },
       },
     ]);
@@ -913,7 +978,18 @@ export const postSearchWithFiltersService = async (req, next) => {
     if (!data || data.length === 0) {
       return { status: "fail", message: "No data found" };
     }
-    return { status: "success", total: data.length, data: data };
+    const { totalCount, paginatedResults } = data[0];
+    const totalItems = totalCount.length > 0 ? totalCount[0].count : 0;
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalItems / pagination.limit),
+      },
+      data: paginatedResults,
+    };
   } catch (error) {
     next(error);
   }

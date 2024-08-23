@@ -20,6 +20,7 @@ import {
   notificationsForUser,
   sendNotificationToUser,
 } from "../utils/NotificationsUtility.js";
+import { calculatePagination } from "../utils/PaginationUtility.js";
 const ObjectID = mongoose.Types.ObjectId;
 
 export const loginService = async (req, next) => {
@@ -174,11 +175,34 @@ export const deleteAdminService = async (req, next) => {
 
 export const getAdminListService = async (req, next) => {
   try {
-    const data = await AdminModel.find({ role: "Admin" });
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const totalAdmin = await AdminModel.countDocuments();
+
+    const data = await AdminModel.find()
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip)
+      .select("-password");
+
     if (!data) {
       return { status: "fail", message: "Failed to load admin list" };
     }
-    return { status: "success", total: data.length, data: data };
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalAdmin / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -186,11 +210,34 @@ export const getAdminListService = async (req, next) => {
 
 export const getUserListService = async (req, next) => {
   try {
-    const data = await UserModel.find({ role: "User" });
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const totalUser = await UserModel.countDocuments();
+
+    const data = await UserModel.find()
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip)
+      .select("-password");
+
     if (!data) {
       return { status: "fail", message: "Failed to load user list" };
     }
-    return { status: "success", total: data.length, data: data };
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalUser / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -198,11 +245,42 @@ export const getUserListService = async (req, next) => {
 
 export const getReviewPostListService = async (req, next) => {
   try {
-    const data = await PostModel.find({ onReview: true, isApproved: false });
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    // Build query for posts on review and not approved
+    const query = {
+      onReview: true,
+      isApproved: false,
+    };
+
+    // Count the total number of documents matching the criteria
+    const totalCount = await PostModel.countDocuments(query);
+
+    // Fetch paginated and sorted posts
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
     if (!data) {
       return { status: "fail", message: "Failed to load review post list" };
     }
-    return { status: "success", total: data.length, data: data };
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -233,25 +311,44 @@ export const getReviewPostIdsService = async (req, next) => {
 
 export const getApprovedPostListService = async (req, next) => {
   try {
-    /*SuperAdmin can view all the approved post but admin can only view those account which they approved*/
-    //For SuperAdmins
-    if (req.headers.role === "SuperAdmin") {
-      const data = await PostModel.find({
-        isApproved: true,
-        onReview: false,
-      });
-      return { status: "success", total: data.length, data: data };
-    }
-    //For Admins
-    const data = await PostModel.find({
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    // Only SuperAdmin can view all approved post, admin will view their own approved post only
+    let query = {
       isApproved: true,
       onReview: false,
-      "approvedBy.userId": new ObjectID(req.headers.id),
-    });
-    if (!data) {
-      return { status: "fail", message: "Failed to load approve post list" };
+    };
+
+    if (req.headers.role !== "SuperAdmin") {
+      query["approvedBy.userId"] = new ObjectID(req.headers.id);
     }
-    return { status: "success", total: data.length, data: data };
+
+    const totalCount = await PostModel.countDocuments(query);
+
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
+    if (!data) {
+      return { status: "fail", message: "Failed to load approved post list" };
+    }
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -259,26 +356,46 @@ export const getApprovedPostListService = async (req, next) => {
 
 export const getDeclinedPostListService = async (req, next) => {
   try {
-    /*SuperAdmin can view all the declined post but admin can only view those account which they declined*/
-    //For SuperAdmins
-    if (req.headers.role === "SuperAdmin") {
-      const data = await PostModel.find({
-        isApproved: false,
-        onReview: false,
-        isDeclined: true,
-      });
-      return { status: "success", total: data.length, data: data };
-    }
-    const data = await PostModel.find({
-      isDeclined: true,
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    // Only SuperAdmin can view all canceled post, admin will view their own canceled post only
+
+    let query = {
       isApproved: false,
       onReview: false,
-      "declinedBy.userId": new ObjectID(req.headers.id),
-    });
+      isDeclined: true,
+    };
+
+    if (req.headers.role !== "SuperAdmin") {
+      query["declinedBy.userId"] = new ObjectID(req.headers.id);
+    }
+
+    const totalCount = await PostModel.countDocuments(query);
+
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
     if (!data) {
       return { status: "fail", message: "Failed to load declined post list" };
     }
-    return { status: "success", total: data.length, data: data };
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -286,11 +403,38 @@ export const getDeclinedPostListService = async (req, next) => {
 
 export const getReportedPostListService = async (req, next) => {
   try {
-    const data = await PostModel.find({ reportCount: { $gte: 1 } });
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const query = {
+      reportCount: { $gte: 1 },
+    };
+
+    const totalCount = await PostModel.countDocuments(query);
+
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
     if (!data) {
       return { status: "fail", message: "Failed to load reported post list" };
     }
-    return { status: "success", total: data.length, data: data };
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -528,11 +672,38 @@ export const sendFeedbackService = async (req, next) => {
 
 export const getWarnedAccountListService = async (req, next) => {
   try {
-    const data = await UserModel.find({ accountStatus: "Warning" });
+    const { page, limit, sortBy, sortOrder } = req.query;
+
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const totalCount = await UserModel.countDocuments({
+      accountStatus: "Warning",
+    });
+
+    const data = await UserModel.find({ accountStatus: "Warning" })
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip)
+      .select("-password");
+
     if (!data) {
       return { status: "fail", message: "Failed to load warning account list" };
     }
-    return { status: "success", data: data };
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -540,14 +711,41 @@ export const getWarnedAccountListService = async (req, next) => {
 
 export const getRestrictedAccountListService = async (req, next) => {
   try {
-    const data = await UserModel.find({ accountStatus: "Restricted" });
+    const { page, limit, sortBy, sortOrder } = req.query;
+
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const totalCount = await UserModel.countDocuments({
+      accountStatus: "Restricted",
+    });
+
+    const data = await UserModel.find({ accountStatus: "Restricted" })
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip)
+      .select("-password");
+
     if (!data) {
       return {
         status: "fail",
         message: "Failed to load restricted account list",
       };
     }
-    return { status: "success", data: data };
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
   } catch (error) {
     next(error);
   }
@@ -650,11 +848,30 @@ export const restrictAccountService = async (req, next) => {
 
 export const getReviewNidListService = async (req, next) => {
   try {
+    const { page, limit, sortBy, sortOrder } = req.query;
+
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const totalCount = await UserModel.countDocuments({
+      nidSubmitted: true,
+      nidFront: { $exists: true, $ne: null },
+      nidBack: { $exists: true, $ne: null },
+    });
+
     const data = await UserModel.find({
       nidSubmitted: true,
       nidFront: { $exists: true, $ne: null },
       nidBack: { $exists: true, $ne: null },
-    }).select("_id name email nidFront nidBack");
+    })
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip)
+      .select("_id name email nidFront nidBack");
 
     if (!data) {
       return {
@@ -665,6 +882,11 @@ export const getReviewNidListService = async (req, next) => {
 
     return {
       status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
       data: data,
     };
   } catch (error) {
@@ -747,7 +969,15 @@ export const declineNidService = async (req, next) => {
 
 export const searchUserService = async (req, next) => {
   try {
-    const { user } = req.query;
+    const { user, page, limit, sortBy, sortOrder } = req.query;
+
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
     const response = await UserModel.aggregate([
       {
         $match: {
@@ -758,9 +988,23 @@ export const searchUserService = async (req, next) => {
         },
       },
       {
-        $project: {
-          password: 0,
-          sessionId: 0,
+        $sort: {
+          [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1,
+        },
+      },
+      {
+        $facet: {
+          totalCount: [{ $count: "count" }],
+          paginatedResults: [
+            { $limit: pagination.limit },
+            { $skip: pagination.skip },
+            {
+              $project: {
+                password: 0,
+                sessionId: 0,
+              },
+            },
+          ],
         },
       },
     ]);
@@ -768,7 +1012,19 @@ export const searchUserService = async (req, next) => {
     if (!response) {
       return { status: "fail", message: "No account found" };
     }
-    return { status: "success", total: response.length, data: response };
+
+    const { totalCount, paginatedResults } = response[0];
+    const totalItems = totalCount.length > 0 ? totalCount[0].count : 0;
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalItems / pagination.limit),
+      },
+      data: paginatedResults,
+    };
   } catch (error) {
     next(error);
   }
@@ -776,7 +1032,13 @@ export const searchUserService = async (req, next) => {
 
 export const searchAdminService = async (req, next) => {
   try {
-    const { admin } = req.query;
+    const { admin, page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
     const response = await AdminModel.aggregate([
       {
         $match: {
@@ -787,16 +1049,46 @@ export const searchAdminService = async (req, next) => {
         },
       },
       {
-        $project: {
-          password: 0,
-          sessionId: 0,
+        $sort: {
+          [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1,
+        },
+      },
+      {
+        $facet: {
+          totalCount: [
+            {
+              $count: "count",
+            },
+          ],
+          paginatedResults: [
+            { $limit: pagination.limit },
+            { $skip: pagination.skip },
+            {
+              $project: {
+                password: 0,
+                sessionId: 0,
+              },
+            },
+          ],
         },
       },
     ]);
     if (!response) {
       return { status: "fail", message: "No account found" };
     }
-    return { status: "success", total: response.length, data: response };
+
+    const { totalCount, paginatedResults } = response[0];
+    const totalItems = totalCount.length > 0 ? totalCount[0].count : 0;
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalItems / pagination.limit),
+      },
+      data: paginatedResults,
+    };
   } catch (error) {
     next(error);
   }

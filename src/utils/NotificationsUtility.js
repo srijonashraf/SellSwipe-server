@@ -47,6 +47,7 @@ export const sendNotificationToUser = async ({
 }) => {
   try {
     let notificationData;
+    //Reference object holding the post or user or both for which the notification is made
     let reference = {};
 
     const post = postId

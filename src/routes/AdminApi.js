@@ -5,6 +5,9 @@ import * as CategoryController from "../controllers/CategoryController.js";
 import * as ModelController from "../controllers/ModelController.js";
 import * as LocationController from "../controllers/LocationController.js";
 import * as LegalController from "../controllers/LegalController.js";
+import * as TicketController from "../controllers/TicketController.js";
+import * as UserController from "../controllers/UserController.js";
+import * as PostController from "../controllers/PostController.js";
 import AuthVerifyMiddleware from "../middlewares/AuthVerifyMiddleware.js";
 import { roleAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
@@ -14,7 +17,10 @@ import {
 } from "../requests/AdminSchema.js";
 import { idSchema } from "../requests/IdSchema.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
-import { legalSchemaCreate, legalSchemaUpdate } from '../requests/LegalSchema.js';
+import {
+  legalSchemaCreate,
+  legalSchemaUpdate,
+} from "../requests/LegalSchema.js";
 
 const adminRouter = express.Router();
 
@@ -29,7 +35,7 @@ adminRouter.post(
 adminRouter.get(
   "/profile/:id?",
   AuthVerifyMiddleware,
-  AdminController.getProfile
+  AdminController.getAdminProfile
 );
 adminRouter.post(
   "/admins",
@@ -62,7 +68,7 @@ adminRouter.get(
   "/users",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin"),
-  AdminController.getUserList
+  UserController.getUserList
 );
 
 // _____________Manage Post________________//
@@ -70,117 +76,100 @@ adminRouter.get(
   "/posts/review",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getReviewPostList
+  PostController.getReviewPostList
 );
-adminRouter.get(
-  "/posts/review/ids",
-  AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getReviewPostIds
-);
+
 adminRouter.get(
   "/posts/approved",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getApprovedPostList
+  PostController.getApprovedPostList
 );
 adminRouter.get(
   "/posts/declined",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getDeclinedPostList
+  PostController.getDeclinedPostList
 );
 adminRouter.get(
   "/posts/reported",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getReportedPostList
+  PostController.getReportedPostList
 );
 adminRouter.post(
   "/posts/:postId/withdraw-report/:id",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.withdrawReport
+  PostController.withdrawReport
 );
 adminRouter.post(
   "/posts/approve",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.approvePost
+  PostController.approvePost
 );
 adminRouter.post(
   "/posts/decline",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.declinePost
+  PostController.declinePost
 );
 adminRouter.delete(
   "/posts/:postId/delete",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.deletePost
+  PostController.deletePostByAdmin
 );
 adminRouter.post(
   "/feedback/:postId",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.sendFeedback
+  PostController.sendFeedback
 );
 
 // _____________Manage Account________________//
-adminRouter.get(
-  "/accounts/warned",
-  AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getWarnedAccountList
-);
-adminRouter.get(
-  "/accounts/restricted",
-  AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getRestrictedAccountList
-);
 adminRouter.post(
   "/accounts/:userId/withdraw-restrictions",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.withdrawRestrictions
+  UserController.withdrawRestrictions
 );
 adminRouter.post(
   "/accounts/:userId/warning",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.warningAccount
+  UserController.warningAccount
 );
 adminRouter.post(
   "/accounts/:userId/restrict",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.restrictAccount
+  UserController.restrictAccount
 );
 adminRouter.get(
   "/nid/review",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.getReviewNidList
+  UserController.getReviewNidList
 );
 adminRouter.post(
   "/nid/approve/:userId",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.approveNid
+  UserController.approveNid
 );
 adminRouter.post(
   "/nid/decline/:userId",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.declineNid
+  UserController.declineNid
 );
 
 // _____________Category________________//
@@ -332,7 +321,11 @@ adminRouter.delete(
 // _____________Legals________________//
 adminRouter.post(
   "/legals",
-  validateRequest({schema:legalSchemaCreate, isParam:false, isQuery:false}),
+  validateRequest({
+    schema: legalSchemaCreate,
+    isParam: false,
+    isQuery: false,
+  }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   LegalController.createLegal
@@ -340,7 +333,7 @@ adminRouter.post(
 
 adminRouter.put(
   "/legals/:id",
-  validateRequest({schema:legalSchemaUpdate, isParam:true, isQuery:false}),
+  validateRequest({ schema: legalSchemaUpdate, isParam: true, isQuery: false }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   LegalController.updateLegal
@@ -348,7 +341,7 @@ adminRouter.put(
 
 adminRouter.delete(
   "/legals/:id",
-  validateRequest({schema:legalSchemaUpdate, isParam:true, isQuery:false}),
+  validateRequest({ schema: legalSchemaUpdate, isParam: true, isQuery: false }),
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
   LegalController.deleteLegal
@@ -359,7 +352,7 @@ adminRouter.get(
   "/users/search",
   AuthVerifyMiddleware,
   roleAuthentication("SuperAdmin", "Admin"),
-  AdminController.searchUser
+  UserController.searchUser
 );
 adminRouter.get(
   "/admins/search",
@@ -372,8 +365,37 @@ adminRouter.get(
 adminRouter.post(
   "/promotional/send",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin","Admin"),
+  roleAuthentication("SuperAdmin", "Admin"),
   AdminController.sendPromotionalEmail
+);
+
+// _____________Ticket________________//
+adminRouter.get(
+  "/tickets",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  TicketController.getAllTicket
+);
+
+adminRouter.post(
+  "/tickets/:userId",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  TicketController.createTicketByAdmin
+);
+
+adminRouter.put(
+  "/tickets/:id/comment",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  TicketController.commentByAdmin
+);
+
+adminRouter.put(
+  "/tickets/:id/assign",
+  AuthVerifyMiddleware,
+  roleAuthentication("SuperAdmin", "Admin"),
+  TicketController.assignNewAdminToTicket
 );
 
 export default adminRouter;

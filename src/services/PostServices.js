@@ -1,56 +1,23 @@
 import mongoose from "mongoose";
 import PostModel from "../models/PostModel.js";
+import PostDetailsModel from "./../models/PostDetailsModel.js";
 import {
   destroyOnCloudinary,
   uploadOnCloudinary,
 } from "../utils/CloudinaryUtility.js";
-import PostDetailsModel from "./../models/PostDetailsModel.js";
 import mapData from "../utils/MappingUtility.js";
 import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import { inputSanitizer } from "./../middlewares/RequestValidateMiddleware.js";
 import { calculatePagination } from "./../utils/PaginationUtility.js";
+import FavouriteModel from "../models/FavouriteModel.js";
+import { reportTypes } from "../constants/ReportTypes.js";
+import {
+  notificationsForAdmin,
+  sendNotificationToAdmin,
+  sendNotificationToUser,
+} from "../utils/NotificationsUtility.js";
 
 const ObjectID = mongoose.Types.ObjectId;
-
-export const getPostByUserService = async (req, next) => {
-  try {
-    const userId = req.headers.id;
-    const posts = await PostModel.find({
-      userID: userId,
-      onReview: false,
-      isApproved: true,
-      isDeleted: false,
-    });
-
-    if (posts.length === 0) {
-      return { status: "success", message: "No post found" };
-    }
-
-    return { status: "success", data: posts };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getPendingPostByUserService = async (req, next) => {
-  try {
-    const userId = req.headers.id;
-    const posts = await PostModel.find({
-      userID: userId,
-      onReview: true,
-      isApproved: false,
-      isDeleted: false,
-    });
-
-    if (posts.length === 0) {
-      return { status: "success", message: "No post found" };
-    }
-
-    return { status: "success", data: posts };
-  } catch (error) {
-    next(error);
-  }
-};
 
 export const createPostService = async (req, next) => {
   try {
@@ -417,7 +384,7 @@ export const detailsPostService = async (req, next) => {
   }
 };
 
-export const deletePostService = async (req, next) => {
+export const deletePostByUserService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
     const userID = new ObjectID(req.headers.id);
@@ -663,6 +630,224 @@ export const getAllPostsService = async (req, next) => {
         totalPages: Math.ceil(totalPosts / pagination.limit),
       },
       data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const ownPostsService = async (req, next) => {
+  try {
+    const userId = req.headers.id;
+    const posts = await PostModel.find({
+      userID: userId,
+      onReview: false,
+      isApproved: true,
+      isDeleted: false,
+    });
+
+    if (posts.length === 0) {
+      return { status: "success", message: "No post found" };
+    }
+
+    return { status: "success", data: posts };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const ownPendingPostService = async (req, next) => {
+  try {
+    const userId = req.headers.id;
+    const posts = await PostModel.find({
+      userID: userId,
+      onReview: true,
+      isApproved: false,
+      isDeleted: false,
+    });
+
+    if (posts.length === 0) {
+      return { status: "success", message: "No post found" };
+    }
+
+    return { status: "success", data: posts };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reportPostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.params.id);
+    const reqBody = req.body;
+
+    inputSanitizer(reqBody);
+
+    const { reportCause } = reqBody;
+
+    const reportResponse = await PostModel.findOneAndUpdate(
+      {
+        _id: postID,
+        "reportedBy.userId": { $nin: [new ObjectID(req.headers.id)] },
+      },
+      {
+        $addToSet: {
+          reportedBy: {
+            userId: new ObjectID(req.headers.id),
+            role: req.headers.role,
+            causeOfReport: reportCause,
+          },
+        },
+        $inc: { reportCount: 1 },
+      },
+      { new: true }
+    );
+
+    if (!reportResponse) {
+      return {
+        stutus: "fail",
+        message: "A report is already pending or failed to report the post",
+      };
+    }
+
+    await sendNotificationToAdmin({
+      notificationType: notificationsForAdmin.REPORT_TO_ADMIN,
+      notificationTitle: reportTypes.HATE_SPEECH,
+      notificationDescription: reportCause,
+      postId: postID,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
+
+    return {
+      status: "success",
+      message: "Report has been submitted successfully.",
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reportedPostListService = async (req, next) => {
+  try {
+    const data = await PostModel.find({
+      "reportedBy.userId": { $in: [req.headers.id] },
+    })
+      .sort({ "reportedBy.createdAt": -1 })
+      .select("title price discount discountPrice");
+    if (!data) {
+      return {
+        stutus: "fail",
+        message: "Failed to load report post list",
+      };
+    }
+
+    return {
+      status: "success",
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const favouritePostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.params.id);
+    const userID = new ObjectID(req.headers.id);
+
+    const favouriteResponse = await FavouriteModel.findOneAndUpdate(
+      { postID, userID },
+      {
+        $set: { postID, userID },
+      },
+      {
+        new: true,
+        upsert: true,
+      }
+    );
+
+    if (!favouriteResponse) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "Post added to favourite",
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const favouritePostListService = async (req, next) => {
+  try {
+    const result = await FavouriteModel.find({ userID: req.headers.id });
+
+    if (!result) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      data: result,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const activePostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.query.postId);
+    const userID = new ObjectID(req.headers.id);
+
+    const result = await PostModel.findOneAndUpdate(
+      { _id: postID, userID: userID },
+      { $set: { isActive: true } }
+    );
+
+    if (!result) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "Your post is now active",
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const inActivePostService = async (req, next) => {
+  try {
+    const postID = new ObjectID(req.query.postId);
+    const userID = new ObjectID(req.headers.id);
+
+    const result = await PostModel.findOneAndUpdate(
+      { _id: postID, userID: userID },
+      { $set: { isActive: false } }
+    );
+
+    if (!result) {
+      return {
+        status: "fail",
+        message: "Post or user not found",
+      };
+    }
+
+    return {
+      status: "success",
+      message: "Your post is now inactive",
     };
   } catch (error) {
     next(error);
@@ -990,6 +1175,411 @@ export const postSearchWithFiltersService = async (req, next) => {
       },
       data: paginatedResults,
     };
+  } catch (error) {
+    next(error);
+  }
+};
+
+//___Admin___//
+export const getReviewPostListService = async (req, next) => {
+  try {
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    // Build query for posts on review and not approved
+    const query = {
+      onReview: true,
+      isApproved: false,
+    };
+
+    // Count the total number of documents matching the criteria
+    const totalCount = await PostModel.countDocuments(query);
+
+    // Fetch paginated and sorted posts
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
+    if (!data) {
+      return { status: "fail", message: "Failed to load review post list" };
+    }
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getApprovedPostListService = async (req, next) => {
+  try {
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    // Only SuperAdmin can view all approved post, admin will view their own approved post only
+    let query = {
+      isApproved: true,
+      onReview: false,
+    };
+
+    if (req.headers.role !== "SuperAdmin") {
+      query["approvedBy.userId"] = new ObjectID(req.headers.id);
+    }
+
+    const totalCount = await PostModel.countDocuments(query);
+
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
+    if (!data) {
+      return { status: "fail", message: "Failed to load approved post list" };
+    }
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDeclinedPostListService = async (req, next) => {
+  try {
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    // Only SuperAdmin can view all canceled post, admin will view their own canceled post only
+
+    let query = {
+      isApproved: false,
+      onReview: false,
+      isDeclined: true,
+    };
+
+    if (req.headers.role !== "SuperAdmin") {
+      query["declinedBy.userId"] = new ObjectID(req.headers.id);
+    }
+
+    const totalCount = await PostModel.countDocuments(query);
+
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
+    if (!data) {
+      return { status: "fail", message: "Failed to load declined post list" };
+    }
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getReportedPostListService = async (req, next) => {
+  try {
+    const { page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const query = {
+      reportCount: { $gte: 1 },
+    };
+
+    const totalCount = await PostModel.countDocuments(query);
+
+    const data = await PostModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip);
+
+    if (!data) {
+      return { status: "fail", message: "Failed to load reported post list" };
+    }
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const withdrawReportService = async (req, next) => {
+  try {
+    const { postId, id } = req.params; //id is report id
+    const data = await PostModel.findOneAndUpdate(
+      { _id: postId, "reportedBy._id": id },
+      {
+        $pull: { reportedBy: { _id: id } },
+        $inc: { reportCount: -1 },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!data) {
+      return { status: "fail", message: "Failed to withdraw report" };
+    }
+
+    // Manually ensure reportCount does not go below zero
+    if (data.reportCount < 0) {
+      data.reportCount = 0;
+      await data.save();
+    }
+
+    return { status: "success", data: data };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approvePostService = async (req, next) => {
+  try {
+    /*req.body should receive an array like this [{
+            "postId": [
+                "66a3de66e505fd46ea7c2435",
+                "66a3de66e505fd46ea7c2435"
+            ]
+            or
+            "postId": [
+                "66a3de66e505fd46ea7c2435"
+            ]
+              */
+
+    const postId = req.body.postId;
+    const { id, name, role } = req.headers;
+
+    inputSanitizer(postId);
+
+    const data = await PostModel.updateMany(
+      { _id: { $in: postId } },
+      {
+        $set: {
+          isDeclined: false,
+          onReview: false,
+          declinedBy: "",
+          isApproved: true,
+          "approvedBy.userId": new ObjectID(id),
+          "approvedBy.name": name,
+          "approvedBy.role": role,
+        },
+      }
+    );
+    if (data.modifiedCount === 0) {
+      return { status: "fail", message: "Failed to approve post" };
+    }
+
+    const adminResponse = await AdminModel.findOneAndUpdate(
+      { _id: id },
+      { $addToSet: { approvedPosts: { $each: postId } } }
+    );
+
+    if (!adminResponse) {
+      return {
+        status: "fail",
+        message: "Failed to update admin model with decline posts",
+      };
+    }
+
+    return { status: "success", data: [], message: "Posts Approved" };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const declinePostService = async (req, next) => {
+  try {
+    /*req.body should receive an array like this [{
+            "postId": [
+                "66a3de66e505fd46ea7c2435",
+                "66a3de66e505fd46ea7c2435"
+            ]
+            or
+            "postId": [
+                "66a3de66e505fd46ea7c2435"
+            ]
+              */
+
+    const postId = req.body.postId;
+    const { id, name, role } = req.headers;
+
+    inputSanitizer(postId);
+
+    const data = await PostModel.updateMany(
+      { _id: { $in: postId } },
+      {
+        $set: {
+          isApproved: false,
+          onReview: false,
+          approvedBy: "",
+          isDeclined: true,
+          "declinedBy.userId": new ObjectID(id),
+          "declinedBy.name": name,
+          "declinedBy.role": role,
+        },
+      }
+    );
+
+    if (data.modifiedCount === 0) {
+      return { status: "fail", message: "Failed to decline post" };
+    }
+
+    const adminResponse = await AdminModel.findOneAndUpdate(
+      { _id: id },
+      { $addToSet: { declinedPosts: { $each: postId } } }
+    );
+
+    if (!adminResponse) {
+      return {
+        status: "fail",
+        message: "Failed to update admin model with decline posts",
+      };
+    }
+
+    return { status: "success", data: data };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deletePostByAdminService = async (req, next) => {
+  const session = await mongoose.startSession();
+  try {
+    const postID = req.params.postId;
+    await sendNotificationToUser({
+      notificationType: notificationsForUser.DELETE_POST,
+      postId: postID,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
+
+    // Start the transaction
+    session.startTransaction();
+
+    // Delete post
+    const post = await PostModel.deleteOne({ _id: postID }).session(session);
+
+    if (!post) {
+      return { status: "fail", message: "Post not found" };
+    }
+
+    if (post.deletedCount !== 1) {
+      // If post delete fails, abort transaction
+      await session.abortTransaction();
+      return { status: "fail", message: "Failed to delete post by admin" };
+    }
+
+    // Delete post details
+    const postDetails = await PostDetailsModel.deleteOne({
+      postID: postID,
+    }).session(session);
+
+    if (postDetails.deletedCount !== 1) {
+      // If post details delete fails, abort transaction
+      await session.abortTransaction();
+      return {
+        status: "fail",
+        message: "Failed to delete post details by admin",
+      };
+    }
+
+    // If all deletes succeeded, commit the transaction
+    await session.commitTransaction();
+
+    return { status: "success", message: "Post deleted by admin successfully" };
+  } catch (error) {
+    // Abort the transaction on any error
+    await session.abortTransaction();
+    next(error);
+    return { status: "fail", message: "Something went wrong" };
+  } finally {
+    // Ensure session is ended only once in the `finally` block
+    await session.endSession();
+  }
+};
+
+export const sendFeedbackService = async (req, next) => {
+  try {
+    const postID = req.params.postId;
+    const reqBody = req.body;
+
+    inputSanitizer(reqBody);
+
+    const data = await PostModel.findOneAndUpdate(
+      { _id: postID },
+      {
+        $addToSet: {
+          feedback: {
+            id: new ObjectID(req.headers.id),
+            role: req.headers.role,
+            comment: reqBody.feedback,
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!data) {
+      return { status: "fail", message: "Failed to send feedback" };
+    }
+    await sendNotificationToUser({
+      notificationType: notificationsForUser.FEEDBACK_POST,
+      postId: postID,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
+
+    return { status: "success", data: data };
   } catch (error) {
     next(error);
   }

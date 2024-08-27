@@ -65,6 +65,7 @@ const UserSchema = mongoose.Schema(
       type: String,
       enum: ["Validate", "Warning", "Restricted"],
       default: "Validate",
+      index: true,
     },
     warningCount: {
       type: Number,
@@ -77,7 +78,7 @@ const UserSchema = mongoose.Schema(
     },
     sessionId: {
       type: [mongoose.Schema.Types.ObjectId],
-      ref: "sessiondetails", //It will add a reference to SessionModel which makes it easier to extract value in UserModel from SessionModel
+      ref: "sessiondetails",
     },
     loginAttempt: {
       type: Number,

@@ -16,6 +16,8 @@ import {
   afterResetPasswordTemplate,
   emailVerificationTemplate,
   resetPasswordTemplate,
+  restrictAccountTemplate,
+  warningAccountTemplate,
 } from "../templates/emailTemplates.js";
 import dotenv from "dotenv";
 import validator from "validator";
@@ -24,17 +26,10 @@ import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 import { currentTime } from "./../constants/CurrectTime.js";
 import { fetchLocation } from "../utils/LocationUtility.js";
 import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
-import PostModel from "../models/PostModel.js";
-import FavouriteModel from "../models/FavouriteModel.js";
 import { errorCodes } from "../constants/ErrorCodes.js";
 import { otpLinkUtility } from "../utils/OtpLinkUtility.js";
 import { emailTypes } from "./../constants/emailTypes.js";
-import NotificationModel from "./../models/NotificationModel.js";
-import {
-  notificationsForAdmin,
-  sendNotificationToAdmin,
-} from "../utils/NotificationsUtility.js";
-import { reportTypes } from "./../constants/ReportTypes.js";
+import { calculatePagination } from "../utils/PaginationUtility.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -200,6 +195,45 @@ export const updateProfileService = async (req, next) => {
       status: "success",
       message: "Profile details updated",
       data: updatedUser,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePasswordService = async (req, next) => {
+  try {
+    const schema = Joi.object().keys({
+      currentPassword: Joi.string().required(),
+      newPassword: Joi.string().required(),
+      confirmPassword: Joi.string().valid(Joi.ref("newPassword")).required(),
+    });
+
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
+    if (error) {
+      return {
+        status: "fail",
+        message: "Object validation failed",
+        error: error,
+      };
+    }
+
+    const { currentPassword, newPassword } = value;
+
+    const user = await UserModel.findById(req.headers.id).select("password");
+
+    const isCorrectPassword = await user.isPasswordCorrect(currentPassword);
+    if (!isCorrectPassword) {
+      return { status: "fail", message: "Current passowrd does not matched" };
+    }
+
+    user.password = newPassword;
+
+    await user.save();
+
+    return {
+      status: "success",
+      message: "Password updated",
     };
   } catch (error) {
     next(error);
@@ -679,228 +713,321 @@ export const resetPasswordByOtpService = async (req, next) => {
   }
 };
 
-export const reportPostService = async (req, next) => {
+//_____Admin______
+export const getUserListService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.params.id);
-    const reqBody = req.body;
+    let query = {};
+    const { status, page, limit, sortBy, sortOrder } = req.query;
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
 
-    inputSanitizer(reqBody);
+    if (status) {
+      query.accountStatus = status;
+    }
 
-    const { reportCause } = reqBody;
+    const totalUser = await UserModel.countDocuments(query);
 
-    const reportResponse = await PostModel.findOneAndUpdate(
+    const data = await UserModel.find(query)
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip)
+      .select("-password");
+
+    if (!data) {
+      return { status: "fail", message: "Failed to load user list" };
+    }
+    return {
+      status: "success",
+      total: totalUser,
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalUser / pagination.limit),
+      },
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const withdrawRestrictionsService = async (req, next) => {
+  try {
+    const { userId } = req.params;
+    const data = await UserModel.findOneAndUpdate(
+      { _id: userId },
+      { $set: { accountStatus: "Validate" } },
+      { new: true }
+    );
+    if (!data) {
+      return { status: "fail", message: "Failed to withdraw restriction" };
+    }
+    return { status: "success", data: data };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const warningAccountService = async (req, next) => {
+  try {
+    const { userId } = req.params;
+    const data = await UserModel.findOneAndUpdate(
+      { _id: userId },
+      { $set: { accountStatus: "Warning" }, $inc: { warningCount: 1 } },
+      { new: true }
+    );
+    if (!data) {
+      return { status: "fail", message: "Failed to warning account" };
+    }
+
+    const adminResponse = await AdminModel.findOneAndUpdate(
+      { _id: req.headers.id },
+      { $addToSet: { warnedAccounts: userId } }
+    );
+    if (!adminResponse) {
+      return {
+        status: "fail",
+        message: "Failed to warning account, check admin model",
+      };
+    }
+
+    await sendNotificationToUser({
+      notificationType: notificationsForUser.WARNING_ACCOUNT,
+      userId: userId,
+      sender: { id: req.headers.id, role: req.headers.role },
+    });
+
+    const emailTemplate = warningAccountTemplate({ name: data.name });
+    await EmailSend(
+      data.email,
+      emailTemplate.subject,
+      emailTemplate.htmlContent
+    );
+
+    return { status: "success", data: data };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const restrictAccountService = async (req, next) => {
+  try {
+    const { userId } = req.params;
+    const data = await UserModel.findOneAndUpdate(
+      { _id: userId },
+      { $set: { accountStatus: "Restricted" } },
+      { new: true }
+    );
+    if (!data) {
+      return { status: "fail", message: "Failed to restrict account" };
+    }
+
+    const adminResponse = await AdminModel.findOneAndUpdate(
+      { _id: req.headers.id },
+      { $addToSet: { restrictedAccounts: userId } }
+    );
+    if (!adminResponse) {
+      return {
+        status: "fail",
+        message: "Failed to restrict account, check admin model",
+      };
+    }
+
+    //Send email
+    const emailTemplate = restrictAccountTemplate({ name: data.name });
+    await EmailSend(
+      data.email,
+      emailTemplate.subject,
+      emailTemplate.htmlContent
+    );
+    return { status: "success", data: data };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getReviewNidListService = async (req, next) => {
+  try {
+    const { page, limit, sortBy, sortOrder } = req.query;
+
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const totalCount = await UserModel.countDocuments({
+      nidSubmitted: true,
+      nidFront: { $exists: true, $ne: null },
+      nidBack: { $exists: true, $ne: null },
+    });
+
+    const data = await UserModel.find({
+      nidSubmitted: true,
+      nidFront: { $exists: true, $ne: null },
+      nidBack: { $exists: true, $ne: null },
+    })
+      .sort({ [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1 })
+      .limit(pagination.limit)
+      .skip(pagination.skip)
+      .select("_id name email nidFront nidBack");
+
+    if (!data) {
+      return {
+        status: "fail",
+        message: "Failed to load review nid list",
+      };
+    }
+
+    return {
+      status: "success",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit),
+      },
+      data: data,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approveNidService = async (req, next) => {
+  try {
+    let userID = req.params.userId;
+    const data = await UserModel.findOneAndUpdate(
       {
-        _id: postID,
-        "reportedBy.userId": { $nin: [new ObjectID(req.headers.id)] },
+        _id: userID,
+        nidSubmitted: true,
+        nidFront: { $exists: true, $ne: null },
+        nidBack: { $exists: true, $ne: null },
       },
       {
-        $addToSet: {
-          reportedBy: {
-            userId: new ObjectID(req.headers.id),
-            role: req.headers.role,
-            causeOfReport: reportCause,
-          },
+        $set: {
+          nidVerified: true,
         },
-        $inc: { reportCount: 1 },
       },
       { new: true }
     );
 
-    if (!reportResponse) {
+    if (!data) {
       return {
-        stutus: "fail",
-        message: "A report is already pending or failed to report the post",
+        status: "fail",
+        message: "User or user's NID not found",
       };
     }
 
-    await sendNotificationToAdmin({
-      notificationType: notificationsForAdmin.REPORT_TO_ADMIN,
-      notificationTitle: reportTypes.HATE_SPEECH,
-      notificationDescription: reportCause,
-      postId: postID,
-      sender: { id: req.headers.id, role: req.headers.role },
-    });
-
     return {
       status: "success",
-      message: "Report has been submitted successfully.",
+      message: "NID requests Approved",
+      data: data,
     };
   } catch (error) {
     next(error);
   }
 };
 
-export const favouritePostService = async (req, next) => {
+export const declineNidService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.params.id);
-    const userID = new ObjectID(req.headers.id);
-
-    const favouriteResponse = await FavouriteModel.findOneAndUpdate(
-      { postID, userID },
+    let userID = req.params.userId;
+    const data = await UserModel.findOneAndUpdate(
       {
-        $set: { postID, userID },
+        _id: userID,
+        nidSubmitted: true,
+        nidFront: { $exists: true, $ne: null },
+        nidBack: { $exists: true, $ne: null },
       },
       {
-        new: true,
-        upsert: true,
-      }
+        $set: {
+          nidVerified: false,
+          nidSubmitted: false,
+          nidFront: "",
+          nidBack: "",
+        },
+      },
+      { new: true }
     );
 
-    if (!favouriteResponse) {
+    if (!data) {
       return {
         status: "fail",
-        message: "Post or user not found",
+        message: "User or user's NID not found",
       };
     }
 
     return {
       status: "success",
-      message: "Post added to favourite",
+      message: "NID requests Declined",
+      data: data,
     };
   } catch (error) {
     next(error);
   }
 };
 
-export const favouritePostListService = async (req, next) => {
+export const searchUserService = async (req, next) => {
   try {
-    const result = await FavouriteModel.find({ userID: req.headers.id });
+    const { user, page, limit, sortBy, sortOrder } = req.query;
 
-    if (!result) {
-      return {
-        status: "fail",
-        message: "Post or user not found",
-      };
+    const pagination = calculatePagination({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
+
+    const response = await UserModel.aggregate([
+      {
+        $match: {
+          $or: [
+            { name: { $regex: user, $options: "i" } },
+            { phone: { $regex: user, $options: "i" } },
+          ],
+        },
+      },
+      {
+        $sort: {
+          [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1,
+        },
+      },
+      {
+        $facet: {
+          totalCount: [{ $count: "count" }],
+          paginatedResults: [
+            { $limit: pagination.limit },
+            { $skip: pagination.skip },
+            {
+              $project: {
+                password: 0,
+                sessionId: 0,
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    if (!response) {
+      return { status: "fail", message: "No account found" };
     }
+
+    const { totalCount, paginatedResults } = response[0];
+    const totalItems = totalCount.length > 0 ? totalCount[0].count : 0;
 
     return {
       status: "success",
-      data: result,
-    };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const activePostService = async (req, next) => {
-  try {
-    const postID = new ObjectID(req.query.postId);
-    const userID = new ObjectID(req.headers.id);
-
-    const result = await PostModel.findOneAndUpdate(
-      { _id: postID, userID: userID },
-      { $set: { isActive: true } }
-    );
-
-    if (!result) {
-      return {
-        status: "fail",
-        message: "Post or user not found",
-      };
-    }
-
-    return {
-      status: "success",
-      message: "Your post is now active",
-    };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const inActivePostService = async (req, next) => {
-  try {
-    const postID = new ObjectID(req.query.postId);
-    const userID = new ObjectID(req.headers.id);
-
-    const result = await PostModel.findOneAndUpdate(
-      { _id: postID, userID: userID },
-      { $set: { isActive: false } }
-    );
-
-    if (!result) {
-      return {
-        status: "fail",
-        message: "Post or user not found",
-      };
-    }
-
-    return {
-      status: "success",
-      message: "Your post is now inactive",
-    };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getAllNotificationService = async (req, next) => {
-  try {
-    const userID = req.headers.id;
-
-    const result = await NotificationModel.find({ receiverId: userID });
-
-    if (!result) {
-      return {
-        status: "fail",
-        message: "Notification or User not found",
-      };
-    }
-
-    return {
-      status: "success",
-      data: result,
-    };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const markSingleNotificationService = async (req, next) => {
-  try {
-    const notificationID = req.params.id;
-    const userID = req.headers.id;
-
-    const result = await NotificationModel.findOneAndUpdate(
-      { _id: notificationID, receiverId: userID },
-      { $set: { isRead: true } }
-    );
-
-    if (!result) {
-      return {
-        status: "fail",
-        message: "Notification or User not found",
-      };
-    }
-
-    return {
-      status: "success",
-      message: "Notification is seen",
-    };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const markAllNotificationService = async (req, next) => {
-  try {
-    const userID = req.headers.id;
-
-    const result = await NotificationModel.updateMany(
-      { receiverId: userID },
-      { $set: { isRead: true } }
-    );
-
-    if (!result) {
-      return {
-        status: "fail",
-        message: "Notification or User not found",
-      };
-    }
-
-    return {
-      status: "success",
-      message: "All notifications are seen",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalItems / pagination.limit),
+      },
+      data: paginatedResults,
     };
   } catch (error) {
     next(error);

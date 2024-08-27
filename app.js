@@ -72,6 +72,13 @@ app.use("/api/v1/", publicRouter); //Public Router
 app.use("/api/v1/user", privateRouter); // Protected Router
 app.use("/api/v1/admin", adminRouter); //Admin Router
 
+app.use("*", (req, res) => {
+  res.status(404).send({
+    status: "fail",
+    message: `Requested path ${req.originalUrl} not found`,
+  });
+});
+
 app.use(errorHandler);
 
 export default app;

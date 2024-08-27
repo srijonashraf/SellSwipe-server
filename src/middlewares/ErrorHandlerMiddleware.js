@@ -11,6 +11,6 @@ export const errorHandler = async (err, req, res, next) => {
     code: statusCode,
     message: message,
     stack: process.env.NODE_ENV === "development" ? err.stack : {},
-    err:err
+    err: err,
   });
 };

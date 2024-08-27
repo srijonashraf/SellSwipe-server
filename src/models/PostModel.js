@@ -51,6 +51,10 @@ const PostSchema = mongoose.Schema(
       role: {
         type: String,
       },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
     isDeclined: {
       type: Boolean,
@@ -65,6 +69,10 @@ const PostSchema = mongoose.Schema(
       },
       role: {
         type: String,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
       },
     },
     isActive: {
@@ -93,6 +101,10 @@ const PostSchema = mongoose.Schema(
         },
         causeOfReport: {
           type: String,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
         },
       },
     ],
@@ -126,6 +138,10 @@ const PostSchema = mongoose.Schema(
         },
         comment: {
           type: String,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
         },
       },
     ],

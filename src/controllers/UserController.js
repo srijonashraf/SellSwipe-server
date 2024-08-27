@@ -2,28 +2,29 @@ import { baseUrl } from "../constants/BaseUrl.js";
 import { emailTypes } from "../constants/emailTypes.js";
 import { verificationTypes } from "../constants/verificationTypes.js";
 import {
-  activePostService,
   allSessionService,
+  approveNidService,
+  declineNidService,
   emailVerificationByLinkService,
   emailVerificationByOtpService,
-  favouritePostListService,
-  favouritePostService,
-  getAllNotificationService,
-  inActivePostService,
+  getReviewNidListService,
+  getUserListService,
   loginService,
   logoutSessionService,
-  markAllNotificationService,
-  markSingleNotificationService,
   profileService,
   registrationService,
-  reportPostService,
   resetPasswordByLinkService,
   resetPasswordByOtpService,
+  restrictAccountService,
+  searchUserService,
   sendAuthEmailsService,
   updateAvatarService,
   updateNidService,
+  updatePasswordService,
   updateProfileService,
   verifyResetPasswordTokenService,
+  warningAccountService,
+  withdrawRestrictionsService,
 } from "../services/UserServices.js";
 
 export const registration = async (req, res, next) => {
@@ -52,12 +53,16 @@ export const updateProfile = async (req, res, next) => {
   const result = await updateProfileService(req, next);
   res.status(200).json(result);
 };
+
+export const updatePassword = async (req, res, next) => {
+  const result = await updatePasswordService(req, next);
+  res.status(200).json(result);
+};
+
 export const updateAvatar = async (req, res, next) => {
   const result = await updateAvatarService(req, next);
   res.status(200).json(result);
 };
-
-//Add update password
 
 export const updateNid = async (req, res, next) => {
   const result = await updateNidService(req, next);
@@ -94,30 +99,6 @@ export const resetPasswordByOtp = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const reportPost = async (req, res, next) => {
-  const result = await reportPostService(req, next);
-  res.status(200).json(result);
-};
-
-export const favouritePost = async (req, res, next) => {
-  const result = await favouritePostService(req, next);
-  res.status(200).json(result);
-};
-
-export const favouritePostList = async (req, res, next) => {
-  const result = await favouritePostListService(req, next);
-  res.status(200).json(result);
-};
-
-export const activePost = async (req, res, next) => {
-  const result = await activePostService(req, next);
-  res.status(200).json(result);
-};
-
-export const inActivePost = async (req, res, next) => {
-  const result = await inActivePostService(req, next);
-  res.status(200).json(result);
-};
 export const sendVerificationEmail = async (req, res, next) => {
   const result = await sendAuthEmailsService({
     req,
@@ -258,17 +239,43 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
-export const markSingleNotification = async (req, res, next) => {
-  const result = await markSingleNotificationService(req, next);
+//_____Admin_____
+export const getUserList = async (req, res, next) => {
+  const result = await getUserListService(req, next);
   res.status(200).json(result);
 };
 
-export const markAllNotification = async (req, res, next) => {
-  const result = await markAllNotificationService(req, next);
+export const withdrawRestrictions = async (req, res, next) => {
+  const result = await withdrawRestrictionsService(req, next);
   res.status(200).json(result);
 };
 
-export const getAllNotification = async (req, res, next) => {
-  const result = await getAllNotificationService(req, next);
+export const warningAccount = async (req, res, next) => {
+  const result = await warningAccountService(req, next);
+  res.status(200).json(result);
+};
+
+export const restrictAccount = async (req, res, next) => {
+  const result = await restrictAccountService(req, next);
+  res.status(200).json(result);
+};
+
+export const getReviewNidList = async (req, res, next) => {
+  const result = await getReviewNidListService(req, next);
+  res.status(200).json(result);
+};
+
+export const approveNid = async (req, res, next) => {
+  const result = await approveNidService(req, next);
+  res.status(200).json(result);
+};
+
+export const declineNid = async (req, res, next) => {
+  const result = await declineNidService(req, next);
+  res.status(200).json(result);
+};
+
+export const searchUser = async (req, res, next) => {
+  const result = await searchUserService(req, next);
   res.status(200).json(result);
 };

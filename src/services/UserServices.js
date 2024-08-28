@@ -30,6 +30,9 @@ import { errorCodes } from "../constants/ErrorCodes.js";
 import { otpLinkUtility } from "../utils/OtpLinkUtility.js";
 import { emailTypes } from "./../constants/emailTypes.js";
 import { calculatePagination } from "../utils/PaginationUtility.js";
+import AdminModel from "../models/AdminModel.js";
+import { sendNotificationToUser } from "../utils/NotificationsUtility.js";
+import { NOTIFICATION_ACTIONS } from "../constants/Notifications.js";
 dotenv.config();
 
 const ObjectID = mongoose.Types.ObjectId;
@@ -122,10 +125,11 @@ export const loginService = async (req, next) => {
     // //!!Free limit 45 Fire in a minute, if anything goes wrong check here.
     // Fetch location details based on IP address
     const location = await fetchLocation(req);
-    //Set session details to DB
+    //Set session details to database
     const sessionBody = {
+      userID: user._id,
       deviceName: req.headers["user-agent"],
-      lastLogin: new Date().toISOString(),
+      lastLogin: Date.now(),
       accessToken: accessTokenResponse,
       refreshToken: refreshTokenResponse,
       location: location,
@@ -134,20 +138,6 @@ export const loginService = async (req, next) => {
 
     const session = await SessionDetailsModel.create(sessionBody);
 
-    if (user.sessionId && Array.isArray(user.sessionId)) {
-      user.sessionId.push(session._id);
-      user.lastLogin = new Date().toISOString();
-      user.loginAttempt = 0;
-      user.limitedLogin = "";
-      await user.save();
-    } else {
-      console.error(
-        "User sessionId is not defined or is not an array:",
-        user.sessionId
-      );
-    }
-
-    // Set the sessionId to the UserModel
     if (accessTokenResponse && refreshTokenResponse && session && user) {
       return {
         status: "success",
@@ -166,7 +156,7 @@ export const loginService = async (req, next) => {
 
 export const profileService = async (req, next) => {
   try {
-    let userID = new ObjectID(req.headers.id);
+    let userID = req.headers.id;
     const user = await UserModel.findOne({ _id: userID }).select(
       "-password -sessionId -phoneVerified -nidVerified -emailVerified -accountStatus -warningCount"
     );
@@ -243,7 +233,7 @@ export const updatePasswordService = async (req, next) => {
 export const updateAvatarService = async (req, next) => {
   let userAvatar = "";
   try {
-    let userID = new ObjectID(req.headers.id);
+    let userID = req.headers.id;
     const filePath = req.file.path; //For single file
     if (!filePath) {
       return { status: "fail", message: "No file selected" };
@@ -279,9 +269,9 @@ export const updateAvatarService = async (req, next) => {
 };
 
 export const updateNidService = async (req, next) => {
-  const responses = {};
+  let responses = {};
   try {
-    let userID = new ObjectID(req.headers.id);
+    let userID = req.headers.id;
     const filePaths = req.files;
 
     if (!filePaths) {
@@ -340,17 +330,15 @@ export const updateNidService = async (req, next) => {
 
 export const allSessionService = async (req, next) => {
   try {
-    let userID = new ObjectID(req.headers.id);
-    const user = await UserModel.findOne({ _id: userID }).populate(
-      "sessionId",
-      "-accessToken -refreshToken -ipAddress -createdAt -updatedAt"
-    );
+    const sessions = await SessionDetailsModel.findOne({
+      userID: req.headers.id,
+    });
 
-    if (!user) {
-      return { status: "fail", message: "User not found" };
+    if (!sessions) {
+      return { status: "fail", message: "User or session not found" };
     }
 
-    return { status: "success", data: user.sessionId };
+    return { status: "success", data: sessions };
   } catch (error) {
     next(error);
   }
@@ -358,51 +346,23 @@ export const allSessionService = async (req, next) => {
 
 export const logoutSessionService = async (req, next) => {
   try {
-    const sessionID = req.query.sessionId;
+    const response = await SessionDetailsModel.deleteOne({
+      _id: req.query.sessionId,
+    });
 
-    // Find the user and check if the sessionID exists in the sessionId array
-    const user = await UserModel.findOne({
-      _id: req.headers.id,
-      sessionId: { $in: [sessionID] },
-    }).select("sessionId");
-
-    if (!user) {
-      return {
-        status: "fail",
-        message:
-          "Failed to logout from the session. SessionID not found in User Model.",
-      };
-    }
-
-    // Delete the session from SessionDetailsModel
-    const response = await SessionDetailsModel.deleteOne({ _id: sessionID });
-
-    if (!response.deletedCount) {
+    if (response.deletedCount !== 1) {
       return {
         status: "fail",
         message: "Failed to logout from session.",
       };
     }
 
-    // Remove the sessionID from the user's sessionId array
-    const sessionIndex = user.sessionId.indexOf(sessionID);
-    if (sessionIndex > -1) {
-      user.sessionId.splice(sessionIndex, 1);
-    }
-
-    // Save the updated user document
-    await user.save();
-
     return {
       status: "success",
       message: "Logged out from the session.",
     };
   } catch (error) {
-    console.error(error);
-    return {
-      status: "fail",
-      message: "Something went wrong.",
-    };
+    next(error);
   }
 };
 
@@ -725,6 +685,7 @@ export const getUserListService = async (req, next) => {
       sortOrder,
     });
 
+    //Admin can search user by their account status also
     if (status) {
       query.accountStatus = status;
     }
@@ -757,9 +718,8 @@ export const getUserListService = async (req, next) => {
 
 export const withdrawRestrictionsService = async (req, next) => {
   try {
-    const { userId } = req.params;
     const data = await UserModel.findOneAndUpdate(
-      { _id: userId },
+      { _id: req.params.userId },
       { $set: { accountStatus: "Validate" } },
       { new: true }
     );
@@ -796,9 +756,9 @@ export const warningAccountService = async (req, next) => {
     }
 
     await sendNotificationToUser({
-      notificationType: notificationsForUser.WARNING_ACCOUNT,
+      action: NOTIFICATION_ACTIONS.WARNING_ACCOUNT,
       userId: userId,
-      sender: { id: req.headers.id, role: req.headers.role },
+      senderId: req.headers.id,
     });
 
     const emailTemplate = warningAccountTemplate({ name: data.name });

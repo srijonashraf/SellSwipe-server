@@ -8,8 +8,9 @@ import * as LegalController from "../controllers/LegalController.js";
 import * as TicketController from "../controllers/TicketController.js";
 import * as UserController from "../controllers/UserController.js";
 import * as PostController from "../controllers/PostController.js";
+import * as ReviewController from "../controllers/ReviewController.js";
 import AuthVerifyMiddleware from "../middlewares/AuthVerifyMiddleware.js";
-import { roleAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
+import { adminAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
   adminSchemaCreate,
@@ -41,33 +42,33 @@ adminRouter.post(
   "/admins",
   validateRequest({ schema: adminSchemaCreate }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   AdminController.createAdmin
 );
 adminRouter.put(
   "/admins",
   validateRequest({ schema: adminSchemaUpdate }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   AdminController.updateAdmin
 );
 adminRouter.delete(
   "/admins/:id",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   AdminController.deleteAdmin
 );
 adminRouter.get(
   "/admins",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   AdminController.getAdminList
 );
 adminRouter.get(
   "/users",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   UserController.getUserList
 );
 
@@ -75,100 +76,120 @@ adminRouter.get(
 adminRouter.get(
   "/posts/review",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.getReviewPostList
 );
 
 adminRouter.get(
   "/posts/approved",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.getApprovedPostList
 );
 adminRouter.get(
   "/posts/declined",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.getDeclinedPostList
 );
 adminRouter.get(
   "/posts/reported",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.getReportedPostList
 );
 adminRouter.post(
   "/posts/:postId/withdraw-report/:id",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.withdrawReport
 );
 adminRouter.post(
   "/posts/approve",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.approvePost
 );
 adminRouter.post(
   "/posts/decline",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.declinePost
 );
 adminRouter.delete(
   "/posts/:postId/delete",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.deletePostByAdmin
 );
 adminRouter.post(
   "/feedback/:postId",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   PostController.sendFeedback
+);
+
+// _____________Review________________//
+adminRouter.get(
+  "/reviews/reported",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin", "Admin"),
+  ReviewController.getReportedReview
+);
+adminRouter.post(
+  "/reviews/:id/withdraw-report",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin", "Admin"),
+  ReviewController.withdrawReportFromReview
+);
+adminRouter.delete(
+  "/reviews/:id",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin", "Admin"),
+  ReviewController.deleteReviewByAdmin
 );
 
 // _____________Manage Account________________//
 adminRouter.post(
   "/accounts/:userId/withdraw-restrictions",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   UserController.withdrawRestrictions
 );
 adminRouter.post(
   "/accounts/:userId/warning",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   UserController.warningAccount
 );
 adminRouter.post(
   "/accounts/:userId/restrict",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   UserController.restrictAccount
 );
 adminRouter.get(
   "/nid/review",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   UserController.getReviewNidList
 );
 adminRouter.post(
   "/nid/approve/:userId",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   UserController.approveNid
 );
 adminRouter.post(
   "/nid/decline/:userId",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   UserController.declineNid
 );
 
@@ -177,20 +198,20 @@ adminRouter.post(
   "/categories",
   AuthVerifyMiddleware,
   upload.single("image"),
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   CategoryController.createCategory
 );
 adminRouter.put(
   "/categories/:categoryId",
   AuthVerifyMiddleware,
   upload.single("image"),
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   CategoryController.updateCategory
 );
 adminRouter.delete(
   "/categories/:categoryId",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   CategoryController.deleteCategory
 );
 
@@ -198,19 +219,19 @@ adminRouter.delete(
 adminRouter.post(
   "/categories/:categoryId/subcategories",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   CategoryController.createSubCategory
 );
 adminRouter.put(
   "/categories/:categoryId/subcategories/:id",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   CategoryController.updateSubCategory
 );
 adminRouter.delete(
   "/subcategories/:id",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   CategoryController.deleteSubCategory
 );
 
@@ -218,19 +239,19 @@ adminRouter.delete(
 adminRouter.post(
   "/brands",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   BrandController.createBrand
 );
 adminRouter.put(
   "/brands/:brandId",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   BrandController.updateBrand
 );
 adminRouter.delete(
   "/brands/:brandId",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   BrandController.deleteBrand
 );
 
@@ -238,19 +259,19 @@ adminRouter.delete(
 adminRouter.post(
   "/brands/:brandId/models",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   ModelController.createModel
 );
 adminRouter.put(
   "/brands/:brandId/models/:id",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   ModelController.updateModel
 );
 adminRouter.delete(
   "/models/:id",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   ModelController.deleteModel
 );
 
@@ -258,63 +279,63 @@ adminRouter.delete(
 adminRouter.post(
   "/locations/divisions",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.createDivision
 );
 adminRouter.put(
   "/locations/divisions/:id",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.updateDivision
 );
 adminRouter.delete(
   "/locations/divisions/:id",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.deleteDivision
 );
 adminRouter.post(
   "/locations/:divisionId/districts",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.createDistrict
 );
 adminRouter.put(
   "/locations/districts/:id",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.updateDistrict
 );
 adminRouter.delete(
   "/locations/districts/:id",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.deleteDistrict
 );
 adminRouter.post(
   "/locations/:districtId/areas",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.createArea
 );
 adminRouter.put(
   "/locations/areas/:id",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.updateArea
 );
 adminRouter.delete(
   "/locations/areas/:id",
   validateRequest({ schema: idSchema, isParam: true }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   LocationController.deleteArea
 );
 
@@ -327,7 +348,7 @@ adminRouter.post(
     isQuery: false,
   }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   LegalController.createLegal
 );
 
@@ -335,7 +356,7 @@ adminRouter.put(
   "/legals/:id",
   validateRequest({ schema: legalSchemaUpdate, isParam: true, isQuery: false }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   LegalController.updateLegal
 );
 
@@ -343,7 +364,7 @@ adminRouter.delete(
   "/legals/:id",
   validateRequest({ schema: legalSchemaUpdate, isParam: true, isQuery: false }),
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   LegalController.deleteLegal
 );
 
@@ -351,13 +372,13 @@ adminRouter.delete(
 adminRouter.get(
   "/users/search",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   UserController.searchUser
 );
 adminRouter.get(
   "/admins/search",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin"),
+  adminAuthentication("SuperAdmin"),
   AdminController.searchAdmin
 );
 
@@ -365,7 +386,7 @@ adminRouter.get(
 adminRouter.post(
   "/promotional/send",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   AdminController.sendPromotionalEmail
 );
 
@@ -373,28 +394,35 @@ adminRouter.post(
 adminRouter.get(
   "/tickets",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   TicketController.getAllTicket
 );
 
 adminRouter.post(
   "/tickets/:userId",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   TicketController.createTicketByAdmin
 );
 
 adminRouter.put(
   "/tickets/:id/comment",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   TicketController.commentByAdmin
+);
+
+adminRouter.put(
+  "/tickets/:id/update-status",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin", "Admin"),
+  TicketController.updateTicketStatusandPriority
 );
 
 adminRouter.put(
   "/tickets/:id/assign",
   AuthVerifyMiddleware,
-  roleAuthentication("SuperAdmin", "Admin"),
+  adminAuthentication("SuperAdmin", "Admin"),
   TicketController.assignNewAdminToTicket
 );
 

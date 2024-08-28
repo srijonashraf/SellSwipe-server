@@ -9,8 +9,7 @@ export const createBrandService = async (req, next) => {
     let cloudinaryResponse = {};
     let brandImg = {};
     const { brandName } = req.body;
-
-    // Check if the brand already exists
+    
     const existing = await BrandModel.countDocuments({
       brandName: { $regex: brandName, $options: "i" },
     }).exec();

@@ -1,5 +1,6 @@
 import AdminModel from "../models/AdminModel.js";
 import TicketModel from "../models/TicketModel.js";
+import { calculatePagination } from "./../utils/PaginationUtility.js";
 
 export const createTicketByUserService = async (req, next) => {
   try {
@@ -136,6 +137,10 @@ export const commentByAdminService = async (req, next) => {
     const ticketID = req.params.id;
     const { id, role, name } = req.headers;
 
+    if (!req.body.comment) {
+      return { status: "fail", message: "Comment not found" };
+    }
+
     // New comment structure
     const newComment = {
       comment: req.body.comment,
@@ -193,6 +198,9 @@ export const updateTicketStatusandPriorityService = async (req, next) => {
     let query = {};
     const ticketId = req.params.id;
     const { status, priority } = req.query;
+
+    console.log(status)
+    console.log(priority)
 
     if (status) {
       query.status = status;

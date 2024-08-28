@@ -1,94 +1,89 @@
-import AdminModel from "../models/AdminModel.js";
 import NotificationModel from "../models/NotificationModel.js";
 import PostModel from "../models/PostModel.js";
+import ReviewModel from "../models/ReviewModel.js";
 import UserModel from "../models/UserModel.js";
+import AdminModel from "../models/AdminModel.js";
 
-export const notificationsForUser = {
-  DELETE_POST: {
-    type: "deletePost",
-    title:
-      "Your post goes against our community standards, so we have removed the post.",
-    description:
-      "Our system detected that you are sharing content which does not comply with our community standards. Therefore, we are taking down your content. Please follow the guidelines for further use of your account.",
-  },
-  FEEDBACK_POST: {
-    type: "feedbackPost",
-    title: "You have new feedback on your post.",
-    description: "Notification sent when feedback is received on a post.",
-  },
-  MARKED_FAVOURITE: {
-    type: "markedAsFavourite",
-    title: "Your post has been marked as a favourite.",
-    description:
-      "Notification sent when a post is marked as a favourite by another user.",
-  },
-  WARNING_ACCOUNT: {
-    type: "warningAccount",
-    title: "Your account has received a warning.",
-    description: "Notification sent to warn a user about their account.",
-  },
-};
-
-export const notificationsForAdmin = {
-  REPORT_TO_ADMIN: {
-    type: "reportAccount",
-  },
-};
 /**
- * User and admin can send two type of notifications like for a Post or for a User account.
- * If the notification is against a post then the Post title will be mentioned in notification title's end to identify.
- * If its against a user account then the title will show the User name at the end of the notification title.
+ * Helper function to fetch the relevant references (Post, User, Review) based on IDs
+ */
+const fetchNotificationReferences = async (postId, userId, reviewId) => {
+  const post = postId
+    ? await PostModel.findById(postId).select(
+        "_id userID title price feedback createdAt updatedAt"
+      )
+    : null;
+  const user = userId
+    ? await UserModel.findById(userId).select(
+        "_id email name createdAt updatedAt"
+      )
+    : null;
+  const review = reviewId
+    ? await ReviewModel.findById(reviewId).select(
+        "_id rating review createdAt updatedAt"
+      )
+    : null;
+
+  return { post, user, review };
+};
+
+/**
+ * Create a notification data object dynamically based on the provided references and notification type
+ */
+const createNotificationData = ({
+  event,
+  title,
+  description,
+  senderId,
+  receiverId,
+  reference,
+}) => ({
+  event,
+  title,
+  description,
+  senderId,
+  receiverId,
+  reference,
+});
+
+/**
+ * Send notification to a specific user
  */
 export const sendNotificationToUser = async ({
-  notificationType,
+  action,
   postId,
   userId,
-  sender: { id, role },
+  senderId,
 }) => {
   try {
-    let notificationData;
-    //Reference object holding the post or user or both for which the notification is made
-    let reference = {};
+    const { post, user } = await fetchNotificationReferences(postId, userId);
 
-    const post = postId
-      ? await PostModel.findById(postId).select(
-          "_id userID title price feedback"
-        )
-      : null;
-    const user = userId
-      ? await UserModel.findById(userId).select("_id email name")
-      : null;
-
-    if (post) reference.post = post;
-    if (user) reference.user = user;
-
-    // Check if at least one reference is found
     if (!post && !user) {
       throw new Error("Either a valid post or user must be provided.");
     }
 
-    //Set title and receiverId dynamically
+    const reference = { ...(post && { post }), ...(user && { user }) };
+
+    // Ensure the action is an object with necessary properties
+    if (!action || typeof action !== "object" || !action.event) {
+      throw new Error("Invalid notification action provided.");
+    }
+
     const title = post
-      ? `${notificationType.title} Post: ${post.title} (${post.updatedAt})`
-      : `${notificationType.title} User: ${user.name}`;
+      ? `${action.title} | Post: ${post.title} (${post.updatedAt})`
+      : `${action.title} | User: ${user.name}`;
 
     const receiverId = post ? post.userID : user._id;
 
-    //Set notification data
-    notificationData = {
-      type: notificationType.type,
+    const notificationData = createNotificationData({
+      event: action.event,
       title,
-      description:
-        notificationType === notificationsForUser.FEEDBACK_POST && post
-          ? `Feedback: ${post.feedback[post.feedback.length - 1].comment}`
-          : notificationType.description,
-      sender: {
-        userId: id,
-        role: role,
-      },
+      description: action.description,
+      senderId,
       receiverId,
-      reference: reference,
-    };
+      reference,
+    });
+
     return await NotificationModel.create(notificationData);
   } catch (error) {
     console.error("Failed to send notification:", error);
@@ -96,71 +91,63 @@ export const sendNotificationToUser = async ({
   }
 };
 
+/**
+ * Send notifications to all admins
+ */
 export const sendNotificationToAdmin = async ({
-  notificationType,
-  notificationTitle,
-  notificationDescription,
+  action,
+  title,
+  description,
   postId,
   userId,
-  sender: { id, role },
+  reviewId,
+  senderId,
 }) => {
   try {
-    let notificationsData = [];
-    let reference = {};
+    const { post, user, review } = await fetchNotificationReferences(
+      postId,
+      userId,
+      reviewId
+    );
 
-    const fetchAllAdmins = await AdminModel.find().select("_id name role");
-
-    const post = postId
-      ? await PostModel.findById(postId).select(
-          "_id userID title price feedback"
-        )
-      : null;
-    const user = userId
-      ? await UserModel.findById(userId).select("_id email name")
-      : null;
-
-    // Add to reference if post or user is found
-    if (post) reference.post = post;
-    if (user) reference.user = user;
-
-    // Check if at least one reference is found
-    if (!post && !user) {
-      throw new Error("Either a valid post or user must be provided.");
+    if (!post && !user && !review) {
+      throw new Error("A valid post, user, or review must be provided.");
     }
 
-    // Iterate through each admin and prepare notifications
-    fetchAllAdmins.forEach((admin) => {
-      const title = post
-        ? `${notificationTitle} Post: ${post.title} (${post.updatedAt})`
-        : `${notificationTitle} User: ${user.name}`;
+    const reference = {
+      ...(post && { post }),
+      ...(user && { user }),
+      ...(review && { review }),
+    };
 
-      const receiverId = admin._id;
+    const admins = await AdminModel.find().select("_id name role");
 
-      const notificationData = {
-        type: notificationType.type,
-        title,
-        description: notificationDescription,
-        sender: {
-          userId: id,
-          role: role,
-        },
-        receiverId,
-        reference: reference,
-      };
+    const notificationsData = admins.map((admin) => {
+      let modifiedTitle;
 
-      notificationsData.push(notificationData);
+      if (post) {
+        modifiedTitle = `${title} | Post: ${post.title} (${post.updatedAt})`;
+      } else if (user) {
+        modifiedTitle = `${title} | User: ${user.name}`;
+      } else if (review) {
+        modifiedTitle = `${title} | Review: ${review.review}`;
+      }
+
+      return createNotificationData({
+        event: action.event,
+        title: modifiedTitle,
+        description: description,
+        senderId,
+        receiverId: admin._id,
+        reference,
+      });
     });
 
-    // Send notification to all admins
-    await Promise.all(
-      notificationsData.map((notification) =>
-        NotificationModel.create(notification)
-      )
-    );
+    await NotificationModel.insertMany(notificationsData);
 
     return { message: "Notifications sent to admin successfully" };
   } catch (error) {
-    console.error("Failed to send notification:", error);
+    console.error("Failed to send notifications to admin:", error);
     throw new Error("Notification sending failed");
   }
 };

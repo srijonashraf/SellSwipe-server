@@ -1,6 +1,7 @@
 import AdminModel from "../models/AdminModel.js";
+import UserModel from "../models/UserModel.js";
 
-export function roleAuthentication(...roles) {
+export function adminAuthentication(...roles) {
   return function (req, res, next) {
     const role = req.headers.role;
     const id = req.headers.id;
@@ -28,3 +29,33 @@ export function roleAuthentication(...roles) {
     }
   };
 }
+
+export const userAuthentication = async (req, res, next) => {
+  try {
+    const { id } = req.headers;
+
+    if (!id) {
+      return res.status(400).json({
+        status: "fail",
+        message: "User ID is required in the headers",
+      });
+    }
+
+    const user = await UserModel.findById(id).exec();
+
+    if (!user) {
+      return res.status(403).json({
+        status: "fail",
+        message: "Permission denied or account not found",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "fail",
+      message: "Something went wrong",
+    });
+  }
+};

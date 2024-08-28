@@ -65,20 +65,12 @@ const UserSchema = mongoose.Schema(
       type: String,
       enum: ["Validate", "Warning", "Restricted"],
       default: "Validate",
-      index: true,
     },
     warningCount: {
       type: Number,
     },
-    lastLogin: {
-      type: String,
-    },
     lastRefresh: {
       type: String,
-    },
-    sessionId: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "sessiondetails",
     },
     loginAttempt: {
       type: Number,

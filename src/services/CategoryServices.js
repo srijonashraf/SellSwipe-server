@@ -11,7 +11,6 @@ export const createCategoryService = async (req, next) => {
     let categoryImg = {};
     const { categoryName } = req.body;
 
-    // Check if the category already exists
     const existing = await CategoryModel.countDocuments({
       categoryName: categoryName,
     }).exec();

@@ -45,7 +45,6 @@ const ticketSchema = new mongoose.Schema(
     },
     assignedAt: {
       type: Date,
-      default: Date.now,
     },
     comments: [
       {

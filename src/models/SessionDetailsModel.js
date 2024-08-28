@@ -2,12 +2,17 @@ import mongoose from "mongoose";
 
 const SessionDetailsSchema = mongoose.Schema(
   {
+    userID: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
     deviceName: {
       type: String,
       required: true,
     },
     lastLogin: {
-      type: String,
+      type: Date,
+      required: true,
     },
     accessToken: {
       type: String,

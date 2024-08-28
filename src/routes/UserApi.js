@@ -15,210 +15,230 @@ import {
   ticketSchemaCreate,
   ticketSchemaUpdate,
 } from "../requests/TicketSchema.js";
+import { userAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
 
-const privateRouter = express.Router();
+const userRouter = express.Router();
 
 //For uploading anything we have to use Multer at first as the middleware because it handles form-data and uploads.
 
 //_________Profile & User___________
-privateRouter.get(
+userRouter.get(
   "/users/profile",
   AuthVerifyMiddlware,
+  userAuthentication,
   UserController.profile
 );
 
-privateRouter.put(
+userRouter.put(
   "/users/profile",
   validateRequest({ schema: userSchemaUpdate, isParam: false, isQuery: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   UserController.updateProfile
 );
 
-privateRouter.put(
+userRouter.put(
   "/users/password/update",
   AuthVerifyMiddlware,
+  userAuthentication,
   UserController.updatePassword
 );
 
-privateRouter.post(
+userRouter.post(
   "/users/avatar",
   upload.single("avatar"),
   AuthVerifyMiddlware,
+  userAuthentication,
   UserController.updateAvatar
 );
 
-privateRouter.post(
+userRouter.post(
   "/users/nid",
   upload.fields([
     { name: "nidFront", maxCount: 1 },
     { name: "nidBack", maxCount: 1 },
   ]),
   AuthVerifyMiddlware,
+  userAuthentication,
   UserController.updateNid
 );
 
 //______Sessions______
-privateRouter.get(
+userRouter.get(
   "/sessions", // Fetch all sessions
   AuthVerifyMiddlware,
+  userAuthentication,
   UserController.allSession
 );
 
-privateRouter.get(
+userRouter.get(
   "/sessions/logout",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   UserController.logoutSession
 );
 
 //______Posts Actions______
-privateRouter.post(
+userRouter.post(
   "/posts/:id/report",
   validateRequest({ schema: idSchema, isQuery: false, isParam: true }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.reportPost
 );
 
-privateRouter.get(
+userRouter.get(
   "/posts/reported",
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.reportedPostList
 );
 
-privateRouter.post(
+userRouter.post(
   "/posts/:id/favorite",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.favouritePost
 );
 
-privateRouter.get(
+userRouter.get(
   "/posts/favorites",
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.favouritePostList
 );
 
-privateRouter.get(
+userRouter.get(
   "/posts/active",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.activePost
 );
 
-privateRouter.get(
+userRouter.get(
   "/posts/inactive",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.inActivePost
 );
 
-privateRouter.post(
+userRouter.post(
   "/posts/similar",
   validateRequest({ schema: idSchema, isQuery: false, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.getSimilarPosts
 );
 
-privateRouter.get("/posts/user", AuthVerifyMiddlware, PostController.ownPosts);
+userRouter.get(
+  "/posts/user",
+  AuthVerifyMiddlware,
+  userAuthentication,
+  PostController.ownPosts
+);
 
-privateRouter.get(
+userRouter.get(
   "/posts/user/pending",
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.ownPendingPost
 );
 
-privateRouter.post(
+userRouter.post(
   "/posts",
   upload.array("images", 5),
   validateRequest({ schema: postSchemaCreate, isQuery: false, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PrePostValidation,
   PostController.createPost
 );
 
-privateRouter.put(
+userRouter.put(
   "/posts/:id",
   upload.array("images", 5),
   validateRequest({ schema: postSchemaUpdate, isQuery: false, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.updatePost
 );
 
-privateRouter.get(
+userRouter.get(
   "/posts/:id",
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.detailsPost
 );
 
-privateRouter.delete(
+userRouter.delete(
   "/posts/:id",
   validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.deletePostByUser
 );
 
-privateRouter.get(
+userRouter.get(
   "/posts/:id/images",
   AuthVerifyMiddlware,
+  userAuthentication,
   PostController.deletePostImages
 );
 
 //______Review______
-privateRouter.post(
+userRouter.post(
   "/reviews/:postId",
   AuthVerifyMiddlware,
+  userAuthentication,
   ReviewController.createReview
 );
 
-privateRouter.put(
+userRouter.put(
   "/reviews/:id",
   AuthVerifyMiddlware,
+  userAuthentication,
   ReviewController.updateReview
 );
 
-privateRouter.delete(
+userRouter.delete(
   "/reviews/:id",
   AuthVerifyMiddlware,
-  ReviewController.deleteReview
+  userAuthentication,
+  ReviewController.deleteReviewByUser
 );
 
-//______Notification Actions______
-privateRouter.post(
-  "/notifications/:id/seen",
+userRouter.post(
+  "/reviews/:id/report",
+  validateRequest({ schema: idSchema, isParam: true, isQuery: false }),
   AuthVerifyMiddlware,
-  NotificationCrontroller.markSingleNotification
-);
-
-privateRouter.post(
-  "/notifications/seen",
-  AuthVerifyMiddlware,
-  NotificationCrontroller.markAllNotification
-);
-
-privateRouter.get(
-  "/notifications",
-  AuthVerifyMiddlware,
-  NotificationCrontroller.getAllNotification
+  userAuthentication,
+  ReviewController.reportReview
 );
 
 //______Ticket Actions______
-privateRouter.post(
+userRouter.post(
   "/tickets",
-  AuthVerifyMiddlware,
   validateRequest({
     schema: ticketSchemaCreate,
     isParam: false,
     isQuery: false,
   }),
+  AuthVerifyMiddlware,
+  userAuthentication,
   TicketController.createTicketByUser
 );
-privateRouter.get(
+userRouter.get(
   "/tickets/:id?",
   AuthVerifyMiddlware,
+  userAuthentication,
   TicketController.getTicket
 );
 
-privateRouter.post(
+userRouter.post(
   "/tickets/:id/comment",
   validateRequest({
     schema: ticketSchemaUpdate,
@@ -226,7 +246,8 @@ privateRouter.post(
     isQuery: false,
   }),
   AuthVerifyMiddlware,
+  userAuthentication,
   TicketController.commentByUser
 );
 
-export default privateRouter;
+export default userRouter;

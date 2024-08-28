@@ -1,8 +1,13 @@
 import {
-  getAllNotificationService,
+  getNotificationService,
   markAllNotificationService,
   markSingleNotificationService,
 } from "../services/NotificationServices.js";
+
+export const getNotification = async (req, res, next) => {
+  const result = await getNotificationService(req, next);
+  res.status(200).json(result);
+};
 
 export const markSingleNotification = async (req, res, next) => {
   const result = await markSingleNotificationService(req, next);
@@ -14,7 +19,3 @@ export const markAllNotification = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const getAllNotification = async (req, res, next) => {
-  const result = await getAllNotificationService(req, next);
-  res.status(200).json(result);
-};

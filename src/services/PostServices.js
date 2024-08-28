@@ -10,19 +10,20 @@ import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import { inputSanitizer } from "./../middlewares/RequestValidateMiddleware.js";
 import { calculatePagination } from "./../utils/PaginationUtility.js";
 import FavouriteModel from "../models/FavouriteModel.js";
-import { reportTypes } from "../constants/ReportTypes.js";
 import {
-  notificationsForAdmin,
+  NOTIFICATION_ACTIONS,
+  REPORT_CATEGORIES,
+} from "../constants/Notifications.js";
+import { postValidationQuery } from "./../utils/PostValidationUtility.js";
+import {
   sendNotificationToAdmin,
   sendNotificationToUser,
 } from "../utils/NotificationsUtility.js";
 
-const ObjectID = mongoose.Types.ObjectId;
-
 export const createPostService = async (req, next) => {
   try {
     let reqBody = req.body;
-    reqBody.userID = new ObjectID(req.headers.id);
+    reqBody.userID = req.headers.id;
     const { PostData, PostDetailsData } = await mapData(reqBody);
 
     if (!req.files || req.files.length !== 5) {
@@ -83,9 +84,9 @@ export const createPostService = async (req, next) => {
 
 export const updatePostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.params.id);
+    const postID = req.params.id;
     let reqBody = req.body;
-    reqBody.userID = new ObjectID(req.headers.id);
+    reqBody.userID = req.headers.id;
     const { PostData, PostDetailsData } = await mapData(reqBody);
 
     if (!req.files || req.files.length !== 5) {
@@ -219,11 +220,12 @@ export const detailsPostService = async (req, next) => {
     const response = await PostModel.aggregate([
       {
         $match: {
-          _id: new ObjectID(postID),
+          _id: postID,
           onReview: false,
           isApproved: true,
           isDeclined: false,
           isActive: true,
+          isDeleted: false,
         },
       },
       {
@@ -387,8 +389,8 @@ export const detailsPostService = async (req, next) => {
 export const deletePostByUserService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
-    const userID = new ObjectID(req.headers.id);
-    const postID = new ObjectID(req.params.id);
+    const userID = new req.headers.id();
+    const postID = new req.params.id();
 
     /* Transaction is used here because the full process is connected
     with two database collections so if there is any issue with any of
@@ -433,7 +435,7 @@ export const deletePostByUserService = async (req, next) => {
 
 export const deletePostImagesService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.params.id);
+    const postID = req.params.id;
     const pid = req.query.pid;
 
     const postData = await PostModel.findOne({
@@ -519,15 +521,10 @@ export const getAllPostsService = async (req, next) => {
       sortBy,
       sortOrder,
     });
+    const postValidation = postValidationQuery();
     const data = await PostModel.aggregate([
       {
-        $match: {
-          isApproved: true,
-          isActive: true,
-          isDeleted: false,
-          onReview: false,
-          isDeclined: false,
-        },
+        $match: postValidation,
       },
       {
         $sort: {
@@ -614,13 +611,7 @@ export const getAllPostsService = async (req, next) => {
       },
     ]);
 
-    const totalPosts = await PostModel.countDocuments({
-      isApproved: true,
-      isActive: true,
-      isDeleted: false,
-      onReview: false,
-      isDeclined: false,
-    });
+    const totalPosts = await PostModel.countDocuments(postValidation);
 
     return {
       status: "success",
@@ -638,13 +629,8 @@ export const getAllPostsService = async (req, next) => {
 
 export const ownPostsService = async (req, next) => {
   try {
-    const userId = req.headers.id;
-    const posts = await PostModel.find({
-      userID: userId,
-      onReview: false,
-      isApproved: true,
-      isDeleted: false,
-    });
+    const postValidation = postValidationQuery({ userID: req.headers.id });
+    const posts = await PostModel.find(postValidation);
 
     if (posts.length === 0) {
       return { status: "success", message: "No post found" };
@@ -658,13 +644,13 @@ export const ownPostsService = async (req, next) => {
 
 export const ownPendingPostService = async (req, next) => {
   try {
-    const userId = req.headers.id;
-    const posts = await PostModel.find({
-      userID: userId,
+    const postValidation = postValidationQuery({
+      userID: req.headers.id,
       onReview: true,
       isApproved: false,
-      isDeleted: false,
+      isDeclined: false,
     });
+    const posts = await PostModel.find(postValidation);
 
     if (posts.length === 0) {
       return { status: "success", message: "No post found" };
@@ -678,7 +664,7 @@ export const ownPendingPostService = async (req, next) => {
 
 export const reportPostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.params.id);
+    const postID = req.params.id;
     const reqBody = req.body;
 
     inputSanitizer(reqBody);
@@ -688,12 +674,12 @@ export const reportPostService = async (req, next) => {
     const reportResponse = await PostModel.findOneAndUpdate(
       {
         _id: postID,
-        "reportedBy.userId": { $nin: [new ObjectID(req.headers.id)] },
+        "reportedBy.userId": { $nin: [req.headers.id] },
       },
       {
         $addToSet: {
           reportedBy: {
-            userId: new ObjectID(req.headers.id),
+            userId: req.headers.id,
             role: req.headers.role,
             causeOfReport: reportCause,
           },
@@ -711,11 +697,11 @@ export const reportPostService = async (req, next) => {
     }
 
     await sendNotificationToAdmin({
-      notificationType: notificationsForAdmin.REPORT_TO_ADMIN,
-      notificationTitle: reportTypes.HATE_SPEECH,
-      notificationDescription: reportCause,
+      action: NOTIFICATION_ACTIONS.REPORT_TO_ADMIN,
+      title: REPORT_CATEGORIES.FALSE_INFORMATION,
+      description: reportCause,
       postId: postID,
-      sender: { id: req.headers.id, role: req.headers.role },
+      senderId: req.headers.id,
     });
 
     return {
@@ -752,8 +738,8 @@ export const reportedPostListService = async (req, next) => {
 
 export const favouritePostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.params.id);
-    const userID = new ObjectID(req.headers.id);
+    const postID = req.params.id;
+    const userID = req.headers.id;
 
     const favouriteResponse = await FavouriteModel.findOneAndUpdate(
       { postID, userID },
@@ -804,8 +790,8 @@ export const favouritePostListService = async (req, next) => {
 
 export const activePostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.query.postId);
-    const userID = new ObjectID(req.headers.id);
+    const postID = req.query.postId;
+    const userID = req.headers.id;
 
     const result = await PostModel.findOneAndUpdate(
       { _id: postID, userID: userID },
@@ -830,8 +816,8 @@ export const activePostService = async (req, next) => {
 
 export const inActivePostService = async (req, next) => {
   try {
-    const postID = new ObjectID(req.query.postId);
-    const userID = new ObjectID(req.headers.id);
+    const postID = req.query.postId;
+    const userID = req.headers.id;
 
     const result = await PostModel.findOneAndUpdate(
       { _id: postID, userID: userID },
@@ -870,8 +856,8 @@ export const getSimilarPostsService = async (req, next) => {
     const data = await PostDetailsModel.aggregate([
       {
         $match: {
-          categoryID: new ObjectID(categoryID),
-          brandID: new ObjectID(brandID),
+          categoryID: categoryID,
+          brandID: brandID,
         },
       },
       { $sample: { size: 10 } },
@@ -956,7 +942,7 @@ export const postSearchWithFiltersService = async (req, next) => {
     });
 
     /**
-     * The postdetails, division, district, area are separate collections,
+     * The postdetails, division, district, area are from different collections,
      * so we have to join them first (using $lookup) and then unwind them
      * to properly project them in the response JSON.
      */
@@ -982,12 +968,25 @@ export const postSearchWithFiltersService = async (req, next) => {
       isDeleted: false,
     };
 
+    //Query to check user validation
+    const userValidationQuery = {
+      "user.accountStatus": { $in: ["Validate", "Warning"] },
+    };
+
+    //Math Title and Description
+    const matchTitleDescription = {
+      $or: [
+        { title: keyWordRegex },
+        { "postdetails.description": keyWordRegex },
+        { "postdetails.keyword": keyWordRegex },
+      ],
+    };
     // Filter for Post Model
     const postFilterQuery = {};
 
-    if (divisionId) postFilterQuery.divisionID = new ObjectID(divisionId);
-    if (districtId) postFilterQuery.districtID = new ObjectID(districtId);
-    if (areaId) postFilterQuery.areaID = new ObjectID(areaId);
+    if (divisionId) postFilterQuery.divisionID = divisionId;
+    if (districtId) postFilterQuery.districtID = districtId;
+    if (areaId) postFilterQuery.areaID = areaId;
 
     // Price filter based on price and discountPrice
     const priceFilter = {
@@ -1017,12 +1016,9 @@ export const postSearchWithFiltersService = async (req, next) => {
 
     // Filter for postdetails collection
     const postDetailsFilter = {};
-    if (brandId)
-      postDetailsFilter["postdetails.brandID"] = new ObjectID(brandId);
-    if (categoryId)
-      postDetailsFilter["postdetails.categoryID"] = new ObjectID(categoryId);
-    if (modelId)
-      postDetailsFilter["postdetails.modelID"] = new ObjectID(modelId);
+    if (brandId) postDetailsFilter["postdetails.brandID"] = brandId;
+    if (categoryId) postDetailsFilter["postdetails.categoryID"] = categoryId;
+    if (modelId) postDetailsFilter["postdetails.modelID"] = modelId;
 
     const data = await PostModel.aggregate([
       {
@@ -1099,17 +1095,10 @@ export const postSearchWithFiltersService = async (req, next) => {
         $match: {
           $and: [
             postValidationQuery,
-            {
-              $or: [
-                { title: keyWordRegex },
-                { "postdetails.description": keyWordRegex },
-                { "postdetails.keyword": keyWordRegex },
-              ],
-            },
+            matchTitleDescription,
             postDetailsFilter,
-            {
-              "user.accountStatus": { $in: ["Validate", "Warning"] }, // Ensure the user has a valid account status
-            },
+            userValidationQuery,
+            postFilterQuery,
           ],
         },
       },
@@ -1168,6 +1157,7 @@ export const postSearchWithFiltersService = async (req, next) => {
 
     return {
       status: "success",
+      total: totalItems,
       pagination: {
         page: pagination.page,
         limit: pagination.limit,
@@ -1192,10 +1182,7 @@ export const getReviewPostListService = async (req, next) => {
     });
 
     // Build query for posts on review and not approved
-    const query = {
-      onReview: true,
-      isApproved: false,
-    };
+    const query = postValidationQuery({ onReview: true, isApproved: false });
 
     // Count the total number of documents matching the criteria
     const totalCount = await PostModel.countDocuments(query);
@@ -1235,13 +1222,10 @@ export const getApprovedPostListService = async (req, next) => {
     });
 
     // Only SuperAdmin can view all approved post, admin will view their own approved post only
-    let query = {
-      isApproved: true,
-      onReview: false,
-    };
+    let query = postValidationQuery();
 
     if (req.headers.role !== "SuperAdmin") {
-      query["approvedBy.userId"] = new ObjectID(req.headers.id);
+      query["approvedBy.userId"] = req.headers.id;
     }
 
     const totalCount = await PostModel.countDocuments(query);
@@ -1281,14 +1265,10 @@ export const getDeclinedPostListService = async (req, next) => {
 
     // Only SuperAdmin can view all canceled post, admin will view their own canceled post only
 
-    let query = {
-      isApproved: false,
-      onReview: false,
-      isDeclined: true,
-    };
+    let query = postValidationQuery({ isApproved: false, isDeclined: true });
 
     if (req.headers.role !== "SuperAdmin") {
-      query["declinedBy.userId"] = new ObjectID(req.headers.id);
+      query["declinedBy.userId"] = req.headers.id;
     }
 
     const totalCount = await PostModel.countDocuments(query);
@@ -1409,9 +1389,9 @@ export const approvePostService = async (req, next) => {
         $set: {
           isDeclined: false,
           onReview: false,
-          declinedBy: "",
+          declinedBy: null,
           isApproved: true,
-          "approvedBy.userId": new ObjectID(id),
+          "approvedBy.userId": id,
           "approvedBy.name": name,
           "approvedBy.role": role,
         },
@@ -1420,19 +1400,6 @@ export const approvePostService = async (req, next) => {
     if (data.modifiedCount === 0) {
       return { status: "fail", message: "Failed to approve post" };
     }
-
-    const adminResponse = await AdminModel.findOneAndUpdate(
-      { _id: id },
-      { $addToSet: { approvedPosts: { $each: postId } } }
-    );
-
-    if (!adminResponse) {
-      return {
-        status: "fail",
-        message: "Failed to update admin model with decline posts",
-      };
-    }
-
     return { status: "success", data: [], message: "Posts Approved" };
   } catch (error) {
     next(error);
@@ -1463,9 +1430,9 @@ export const declinePostService = async (req, next) => {
         $set: {
           isApproved: false,
           onReview: false,
-          approvedBy: "",
+          approvedBy: null,
           isDeclined: true,
-          "declinedBy.userId": new ObjectID(id),
+          "declinedBy.userId": id,
           "declinedBy.name": name,
           "declinedBy.role": role,
         },
@@ -1475,19 +1442,6 @@ export const declinePostService = async (req, next) => {
     if (data.modifiedCount === 0) {
       return { status: "fail", message: "Failed to decline post" };
     }
-
-    const adminResponse = await AdminModel.findOneAndUpdate(
-      { _id: id },
-      { $addToSet: { declinedPosts: { $each: postId } } }
-    );
-
-    if (!adminResponse) {
-      return {
-        status: "fail",
-        message: "Failed to update admin model with decline posts",
-      };
-    }
-
     return { status: "success", data: data };
   } catch (error) {
     next(error);
@@ -1499,9 +1453,9 @@ export const deletePostByAdminService = async (req, next) => {
   try {
     const postID = req.params.postId;
     await sendNotificationToUser({
-      notificationType: notificationsForUser.DELETE_POST,
+      action: NOTIFICATION_ACTIONS.DELETE_POST,
       postId: postID,
-      sender: { id: req.headers.id, role: req.headers.role },
+      senderId: req.headers.id,
     });
 
     // Start the transaction
@@ -1561,7 +1515,7 @@ export const sendFeedbackService = async (req, next) => {
       {
         $addToSet: {
           feedback: {
-            id: new ObjectID(req.headers.id),
+            id: req.headers.id,
             role: req.headers.role,
             comment: reqBody.feedback,
           },
@@ -1574,9 +1528,9 @@ export const sendFeedbackService = async (req, next) => {
       return { status: "fail", message: "Failed to send feedback" };
     }
     await sendNotificationToUser({
-      notificationType: notificationsForUser.FEEDBACK_POST,
+      action: NOTIFICATION_ACTIONS.FEEDBACK_POST,
       postId: postID,
-      sender: { id: req.headers.id, role: req.headers.role },
+      senderId: req.headers.id,
     });
 
     return { status: "success", data: data };

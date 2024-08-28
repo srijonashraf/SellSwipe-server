@@ -8,6 +8,8 @@ import { promotionalEmailTemplate } from "./../templates/emailTemplates.js";
 import EmailSend from "../utils/EmailUtility.js";
 import PromotionsModel from "../models/PromotionsModel.js";
 import { calculatePagination } from "../utils/PaginationUtility.js";
+import { fetchLocation } from "../utils/LocationUtility.js";
+
 export const loginService = async (req, next) => {
   try {
     const reqBody = req.body;
@@ -24,35 +26,23 @@ export const loginService = async (req, next) => {
     const accessTokenResponse = generateAccessToken(admin);
     const refreshTokenResponse = generateRefreshToken(admin);
 
-    // Fetch location data and handle errors
-    let location = {};
-    try {
-      const fetchResponse = await fetch(`http://ip-api.com/json/${req.ip}`);
-      if (!fetchResponse.ok) {
-        throw new Error("Failed to fetch location data");
-      }
-      location = await fetchResponse.json();
-    } catch (error) {
-      console.error("Location fetch error:", error);
-    }
-
+    //!!Free limit 45 Fire in a minute, if anything goes wrong check here.
+    // Fetch location details based on IP address
+    const location = await fetchLocation(req);
     // Set session details to DB
     const sessionBody = {
+      userID: admin._id,
       deviceName: req.headers["user-agent"],
-      lastLogin: new Date().toISOString(),
+      lastLogin: Date.now(),
       accessToken: accessTokenResponse,
       refreshToken: refreshTokenResponse,
       location: location,
       ipAddress: req.ip,
     };
 
-    //Create a mew session
     const session = await SessionDetailsModel.create(sessionBody);
-    // Set the sessionId to the AdminModel
-    data.sessionId.push(session._id);
-    await data.save();
 
-    if (session) {
+    if (accessTokenResponse && refreshTokenResponse && session && admin) {
       return {
         status: "success",
         id: data._id,
@@ -267,8 +257,8 @@ export const sendPromotionalEmailService = async (req, next) => {
         message: "Any of the required field is empty, failed to send emails",
       };
     }
-
-    const data = await PromotionsModel.create(req.body);
+    
+    await PromotionsModel.create(req.body);
 
     userList.forEach((user) => {
       emailTemplates[user.email] = promotionalEmailTemplate({

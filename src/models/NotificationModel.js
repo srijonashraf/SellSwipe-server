@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const NotificationSchema = mongoose.Schema(
   {
-    type: {
+    event: {
       type: String,
       required: true,
     },
@@ -12,12 +12,9 @@ const NotificationSchema = mongoose.Schema(
     description: {
       type: String,
     },
-    sender: {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-      },
-      role: { type: String, required: true },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -26,7 +23,7 @@ const NotificationSchema = mongoose.Schema(
     reference: {
       type: Object,
     },
-    isRead: {
+    readStatus: {
       type: Boolean,
       default: false,
     },

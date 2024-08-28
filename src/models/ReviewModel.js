@@ -23,6 +23,27 @@ const ReviewSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    reportCount: {
+      type: Number,
+      default: 0,
+    },
+    reportedBy: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+        },
+        role: {
+          type: String,
+        },
+        causeOfReport: {
+          type: String,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true, versionKey: false }
 );

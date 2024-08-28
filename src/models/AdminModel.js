@@ -33,21 +33,11 @@ const AdminSchema = mongoose.Schema(
         type: String,
       },
     },
-    approvedPosts: {
-      type: [mongoose.Schema.Types.ObjectId],
-    },
-    declinedPosts: {
-      type: [mongoose.Schema.Types.ObjectId],
-    },
     warnedAccounts: {
       type: [mongoose.Schema.Types.ObjectId],
     },
     restrictedAccounts: {
       type: [mongoose.Schema.Types.ObjectId],
-    },
-    sessionId: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "sessiondetails",
     },
   },
   {

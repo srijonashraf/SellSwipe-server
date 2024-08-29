@@ -3,8 +3,7 @@ import OtpModel from "../models/OtpModel.js";
 import { baseUrl } from "../constants/BaseUrl.js";
 import jwt from "jsonwebtoken";
 import { currentTime } from "../constants/CurrectTime.js";
-import { emailTypes } from "../constants/emailTypes.js";
-import { verificationTypes } from "../constants/verificationTypes.js";
+import { emailTypes, verificationTypes } from "../constants/Types.js";
 dotenv.config();
 export const otpLinkUtility = async (req, email, userId, emailType) => {
   let otp = Math.floor(100000 + Math.random() * 900000);

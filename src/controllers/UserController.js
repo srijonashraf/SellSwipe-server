@@ -1,6 +1,5 @@
 import { baseUrl } from "../constants/BaseUrl.js";
-import { emailTypes } from "./../constants/EmailTypes";
-import { verificationTypes } from "../constants/verificationTypes.js";
+import { emailTypes, verificationTypes } from "../constants/Types.js";
 import {
   allSessionService,
   approveNidService,

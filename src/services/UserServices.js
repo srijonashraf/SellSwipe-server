@@ -28,14 +28,12 @@ import { fetchLocation } from "../utils/LocationUtility.js";
 import { removeUnusedLocalFile } from "../utils/FileCleanUpUtility.js";
 import { errorCodes } from "../constants/ErrorCodes.js";
 import { otpLinkUtility } from "../utils/OtpLinkUtility.js";
-import { emailTypes } from "./../constants/emailTypes.js";
 import { calculatePagination } from "../utils/PaginationUtility.js";
 import AdminModel from "../models/AdminModel.js";
 import { sendNotificationToUser } from "../utils/NotificationsUtility.js";
 import { NOTIFICATION_ACTIONS } from "../constants/Notifications.js";
+import { emailTypes } from "../constants/Types.js";
 dotenv.config();
-
-const ObjectID = mongoose.Types.ObjectId;
 
 const cleanupLocalFiles = (files) => {
   if (files && files.nidFront) {

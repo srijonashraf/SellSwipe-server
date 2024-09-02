@@ -20,7 +20,6 @@ const SessionDetailsSchema = mongoose.Schema(
     },
     refreshToken: {
       type: String,
-      required: true,
     },
     location: {
       type: Object,

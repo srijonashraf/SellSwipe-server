@@ -7,10 +7,10 @@ dotenv.config({ path: "../../.env" });
 
 export default async (req, res, next) => {
   try {
-    const token = req.headers.accessToken || req.cookies.accessToken;
+    const accessToken = req.headers.accessToken || req.cookies.accessToken;
     const refreshToken = req.headers.refreshToken || req.cookies.refreshToken;
 
-    if (!token) {
+    if (!accessToken || !refreshToken) {
       return res.status(401).json({
         status: "fail",
         message: "Unauthorized Request, Token not found.",
@@ -18,7 +18,7 @@ export default async (req, res, next) => {
     }
 
     jwt.verify(
-      token,
+      accessToken,
       process.env.JWT_ACCESS_TOKEN_SECRET,
       async (error, decoded) => {
         if (error) {
@@ -47,7 +47,7 @@ export default async (req, res, next) => {
         // Check if a session exists for the user/admin with the provided tokens
         const session = await SessionDetailsModel.findOne({
           userID: id,
-          accessToken: token,
+          accessToken: accessToken,
           refreshToken: refreshToken,
         }).select("_id");
 
@@ -65,11 +65,12 @@ export default async (req, res, next) => {
 
         // Set cookies for client
         const cookieOption = {
-          maxAge: Math.floor(Date.now() / 1000) + 6 * 24 * 60 * 60,
+          maxAge: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
           httpOnly: true,
         };
         res.cookie("id", user._id, cookieOption);
         res.cookie("name", user.name, cookieOption);
+        res.cookie("role", user.role, cookieOption);
 
         next();
       }

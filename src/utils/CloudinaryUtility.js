@@ -30,6 +30,8 @@ export const uploadOnCloudinary = async (localFilePath, userId) => {
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
+    fs.unlinkSync(localFilePath);
+    console.error(error)
     return null;
   }
 };
@@ -55,6 +57,8 @@ export const uplaodOnCloudinaryWebAssets = async (localFilePath, location) => {
     fs.unlinkSync(localFilePath);
     return response;
   } catch (error) {
+    fs.unlinkSync(localFilePath);
+    console.error(error)
     return null;
   }
 };

@@ -9,6 +9,7 @@ import * as TicketController from "../controllers/TicketController.js";
 import * as UserController from "../controllers/UserController.js";
 import * as PostController from "../controllers/PostController.js";
 import * as ReviewController from "../controllers/ReviewController.js";
+import * as AuthController from "../controllers/AuthController.js";
 import AuthVerifyMiddleware from "../middlewares/AuthVerifyMiddleware.js";
 import { adminAuthentication } from "../middlewares/RoleAuthenticationMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
@@ -29,13 +30,21 @@ const adminRouter = express.Router();
 adminRouter.post(
   "/login",
   validateRequest({ schema: adminSchemaUpdate }),
-  AdminController.login
+  AuthController.adminLogin
+);
+
+adminRouter.put(
+  "/password",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin","Admin"),
+  AdminController.updatePassword
 );
 
 // _____________Profile________________//
 adminRouter.get(
   "/profile/:id?",
   AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin","Admin"),
   AdminController.getAdminProfile
 );
 adminRouter.post(
@@ -424,6 +433,28 @@ adminRouter.put(
   AuthVerifyMiddleware,
   adminAuthentication("SuperAdmin", "Admin"),
   TicketController.assignNewAdminToTicket
+);
+
+//___Admin Dashboard__//
+adminRouter.get(
+  "/dashboard/posts/review/count",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin", "Admin"),
+  AdminController.countPostsToReview
+);
+
+adminRouter.get(
+  "/dashboard/report/review/count",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin", "Admin"),
+  AdminController.countReportsToReview
+);
+
+adminRouter.get(
+  "/dashboard/tickets/count",
+  AuthVerifyMiddleware,
+  adminAuthentication("SuperAdmin", "Admin"),
+  AdminController.countTicketsByStatus
 );
 
 export default adminRouter;

@@ -4,8 +4,9 @@ import * as CategoryContoller from "../controllers/CategoryController.js";
 import * as ModelController from "../controllers/ModelController.js";
 import * as LocationController from "../controllers/LocationController.js";
 import * as PostController from "../controllers/PostController.js";
-import * as UserController from "../controllers/UserController.js";
+import * as StatsController from "../controllers/StatsController.js";
 import * as LegalController from "../controllers/LegalController.js";
+import * as AuthController from "../controllers/AuthController.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
   userCredentialSchema,
@@ -14,13 +15,12 @@ import {
 
 const publicRouter = express.Router();
 
-
-//_________Categories, Brands, and Models Endpoints__________//
+//_________Categories, Brands, and Models__________//
 publicRouter.get("/categories", CategoryContoller.getCategoryList);
 publicRouter.get("/brands", BrandController.getBrandList);
 publicRouter.get("/models/:brandId", ModelController.getModelList);
 
-//_________Location Endpoints__________//
+//_________Location__________//
 publicRouter.get("/locations/divisions", LocationController.getDivisionList);
 publicRouter.get(
   "/locations/:divisionId/districts",
@@ -31,18 +31,18 @@ publicRouter.get(
   LocationController.getAreaList
 );
 
-//_________Legal Informations Endpoints__________//
+//_________Legal Informations______//
 publicRouter.get("/legals", LegalController.getLegalList);
 
 //_________Posts__________//
 publicRouter.get("/posts/all-post", PostController.getAllPosts);
 publicRouter.get("/posts/search", PostController.postSearchWithFilters);
 
-//_________Auth Endpoints__________//
+//_________Auth__________//
 publicRouter.post(
   "/auth/register",
   validateRequest({ schema: userSchemaCreate, isParam: false, isQuery: false }),
-  UserController.registration
+  AuthController.userRegistration
 );
 
 publicRouter.post(
@@ -52,23 +52,28 @@ publicRouter.post(
     isParam: false,
     isQuery: false,
   }),
-  UserController.login
+  AuthController.userLogin
 );
 
-/**
- * sendVerificationEmail and sendResetPasswordEmail are for external API calls.
- * Internally, sendAuthEmail handles auth verification and password resets.
- */
 publicRouter.get(
   "/auth/send-email/verification",
-  UserController.sendVerificationEmail
+  AuthController.sendVerificationEmail
 );
 publicRouter.get(
   "/auth/send-email/reset-password",
-  UserController.sendResetPasswordEmail
+  AuthController.sendResetPasswordEmail
 );
-publicRouter.get("/auth/verify/email", UserController.verifyUser);
-publicRouter.get("/auth/verify/token", UserController.verifyResetPasswordToken);
-publicRouter.post("/auth/reset-password", UserController.resetPassword);
+publicRouter.get("/auth/verify/email", AuthController.verifyUser);
+
+publicRouter.get("/auth/verify/token", AuthController.verifyResetPasswordToken);
+
+publicRouter.post("/auth/reset-password", AuthController.resetPassword);
+
+//____Stats____//
+
+publicRouter.get("/total-users", StatsController.getTotalUsers);
+publicRouter.get("/total-posts", StatsController.getTotalPosts);
+publicRouter.get("/total-categories", StatsController.getTotalCategories);
+publicRouter.get("/total-brands", StatsController.getTotalBrands);
 
 export default publicRouter;

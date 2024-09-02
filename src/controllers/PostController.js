@@ -1,5 +1,4 @@
 import {
-  activePostService,
   createPostService,
   deletePostImagesService,
   deletePostByUserService,
@@ -9,8 +8,6 @@ import {
   favouritePostService,
   getAllPostsService,
   getSimilarPostsService,
-  inActivePostService,
-  ownPendingPostService,
   ownPostsService,
   postSearchWithFiltersService,
   reportedPostListService,
@@ -24,6 +21,7 @@ import {
   withdrawReportService,
   approvePostService,
   sendFeedbackService,
+  updatePostStatusService,
 } from "./../services/PostServices.js";
 
 export const detailsPost = async (req, res, next) => {
@@ -61,11 +59,6 @@ export const ownPosts = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const ownPendingPost = async (req, res, next) => {
-  const result = await ownPendingPostService(req, next);
-  res.status(200).json(result);
-};
-
 export const reportPost = async (req, res, next) => {
   const result = await reportPostService(req, next);
   res.status(200).json(result);
@@ -86,13 +79,8 @@ export const favouritePostList = async (req, res, next) => {
   res.status(200).json(result);
 };
 
-export const activePost = async (req, res, next) => {
-  const result = await activePostService(req, next);
-  res.status(200).json(result);
-};
-
-export const inActivePost = async (req, res, next) => {
-  const result = await inActivePostService(req, next);
+export const updatePostStatus = async (req, res, next) => {
+  const result = await updatePostStatusService(req, next);
   res.status(200).json(result);
 };
 

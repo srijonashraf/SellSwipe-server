@@ -8,3 +8,8 @@ export const verificationTypes = {
   OTP_VERIFICATION: "otp",
   LINK_VERIFICATION: "link",
 };
+
+export const postStatus = {
+  ACTIVE_POST: "active",
+  INACTIVE_POST: "inactive",
+};

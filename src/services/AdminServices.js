@@ -1,64 +1,11 @@
 import AdminModel from "./../models/AdminModel.js";
-import SessionDetailsModel from "./../models/SessionDetailsModel.js";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-} from "../utils/TokenUtility.js";
 import { promotionalEmailTemplate } from "./../templates/emailTemplates.js";
 import EmailSend from "../utils/EmailUtility.js";
 import PromotionsModel from "../models/PromotionsModel.js";
 import { calculatePagination } from "../utils/PaginationUtility.js";
-import { fetchLocation } from "../utils/LocationUtility.js";
-
-export const loginService = async (req, next) => {
-  try {
-    const reqBody = req.body;
-    const data = await AdminModel.findOne({ email: reqBody.email }).exec();
-    if (!data) {
-      return { status: "fail", message: "No admin associated with this email" };
-    }
-    const isCorrectPassword = await data.isPasswordCorrect(reqBody.password);
-    if (!isCorrectPassword) {
-      return { status: "fail", message: "Wrong credentials" };
-    }
-
-    const admin = { _id: data._id, role: data.role };
-    const accessTokenResponse = generateAccessToken(admin);
-    const refreshTokenResponse = generateRefreshToken(admin);
-
-    //!!Free limit 45 Fire in a minute, if anything goes wrong check here.
-    // Fetch location details based on IP address
-    const location = await fetchLocation(req);
-    // Set session details to DB
-    const sessionBody = {
-      userID: admin._id,
-      deviceName: req.headers["user-agent"],
-      lastLogin: Date.now(),
-      accessToken: accessTokenResponse,
-      refreshToken: refreshTokenResponse,
-      location: location,
-      ipAddress: req.ip,
-    };
-
-    const session = await SessionDetailsModel.create(sessionBody);
-
-    if (accessTokenResponse && refreshTokenResponse && session && admin) {
-      return {
-        status: "success",
-        id: data._id,
-        email: data.email,
-        name: data.name,
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
-      };
-    } else {
-      return { status: "fail", message: "Failed to login" };
-    }
-  } catch (error) {
-    console.error("Login error:", error);
-    next(error);
-  }
-};
+import PostModel from "../models/PostModel.js";
+import TicketModel from "../models/TicketModel.js";
+import Joi from "joi";
 
 export const getAdminProfileService = async (req, next) => {
   try {
@@ -130,6 +77,45 @@ export const updateAdminService = async (req, next) => {
       status: "success",
       message: "Profile details updated",
       data: updatedAdmin,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePasswordService = async (req, next) => {
+  try {
+    const schema = Joi.object().keys({
+      currentPassword: Joi.string().required(),
+      newPassword: Joi.string().required(),
+      confirmPassword: Joi.string().valid(Joi.ref("newPassword")).required(),
+    });
+
+    const { error, value } = schema.validate(req.body, { abortEarly: false });
+    if (error) {
+      return {
+        status: "fail",
+        message: "Object validation failed",
+        error: error,
+      };
+    }
+
+    const { currentPassword, newPassword } = value;
+
+    const admin = await AdminModel.findById(req.headers.id).select("password");
+
+    const isCorrectPassword = await admin.isPasswordCorrect(currentPassword);
+    if (!isCorrectPassword) {
+      return { status: "fail", message: "Current passowrd does not matched" };
+    }
+
+    admin.password = newPassword;
+
+    await admin.save();
+
+    return {
+      status: "success",
+      message: "Password updated",
     };
   } catch (error) {
     next(error);
@@ -257,7 +243,7 @@ export const sendPromotionalEmailService = async (req, next) => {
         message: "Any of the required field is empty, failed to send emails",
       };
     }
-    
+
     await PromotionsModel.create(req.body);
 
     userList.forEach((user) => {
@@ -277,6 +263,60 @@ export const sendPromotionalEmailService = async (req, next) => {
       );
     }
     return { status: "success", message: "All emails sent successfully" };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const countPostsToReviewService = async (req, next) => {
+  try {
+    const totalPostToReviewCount = await PostModel.countDocuments({
+      onReview: true,
+      isDeclined: false,
+      isApproved: false,
+      isActive: true,
+      isDeleted: false,
+    }).exec();
+    return {
+      status: "success",
+      reviewPostCount: totalPostToReviewCount,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const countReportsToReviewService = async (req, next) => {
+  try {
+    const totalReportToReviewCount = await PostModel.countDocuments({
+      onReview: false,
+      isDeclined: false,
+      isApproved: true,
+      isActive: true,
+      isDeleted: false,
+      reportCount: { $gte: 1 },
+    }).exec();
+    return {
+      status: "success",
+      reviewReportCount: totalReportToReviewCount,
+    };
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const countTicketsByStatusService = async (req, next) => {
+  try {
+    const { status } = req.query;
+    const count = await TicketModel.countDocuments({
+      status: status.toString(),
+    }).exec();
+
+    return {
+      status: "success",
+      ticketStatus: status,
+      totalCount: count,
+    };
   } catch (error) {
     next(error);
   }

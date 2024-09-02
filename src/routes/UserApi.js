@@ -3,7 +3,7 @@ import * as PostController from "../controllers/PostController.js";
 import * as ReviewController from "../controllers/ReviewController.js";
 import * as UserController from "../controllers/UserController.js";
 import * as TicketController from "../controllers/TicketController.js";
-import * as NotificationCrontroller from "../controllers/NotificationController.js";
+import * as AuthController from "../controllers/AuthController.js";
 import { upload } from "../middlewares/MulterMiddleware.js";
 import AuthVerifyMiddlware from "../middlewares/AuthVerifyMiddleware.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
@@ -21,16 +21,16 @@ const userRouter = express.Router();
 
 //For uploading anything we have to use Multer at first as the middleware because it handles form-data and uploads.
 
-//_________Profile & User___________
+//_________Profile & User___________//
 userRouter.get(
-  "/users/profile",
+  "/profile",
   AuthVerifyMiddlware,
   userAuthentication,
   UserController.profile
 );
 
 userRouter.put(
-  "/users/profile",
+  "/profile",
   validateRequest({ schema: userSchemaUpdate, isParam: false, isQuery: false }),
   AuthVerifyMiddlware,
   userAuthentication,
@@ -38,14 +38,14 @@ userRouter.put(
 );
 
 userRouter.put(
-  "/users/password/update",
+  "/password",
   AuthVerifyMiddlware,
   userAuthentication,
   UserController.updatePassword
 );
 
 userRouter.post(
-  "/users/avatar",
+  "/avatar",
   upload.single("avatar"),
   AuthVerifyMiddlware,
   userAuthentication,
@@ -53,7 +53,7 @@ userRouter.post(
 );
 
 userRouter.post(
-  "/users/nid",
+  "/nid",
   upload.fields([
     { name: "nidFront", maxCount: 1 },
     { name: "nidBack", maxCount: 1 },
@@ -63,23 +63,8 @@ userRouter.post(
   UserController.updateNid
 );
 
-//______Sessions______
-userRouter.get(
-  "/sessions", // Fetch all sessions
-  AuthVerifyMiddlware,
-  userAuthentication,
-  UserController.allSession
-);
 
-userRouter.get(
-  "/sessions/logout",
-  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
-  AuthVerifyMiddlware,
-  userAuthentication,
-  UserController.logoutSession
-);
-
-//______Posts Actions______
+//______Posts Actions______//
 userRouter.post(
   "/posts/:id/report",
   validateRequest({ schema: idSchema, isQuery: false, isParam: true }),
@@ -110,20 +95,12 @@ userRouter.get(
   PostController.favouritePostList
 );
 
-userRouter.get(
-  "/posts/active",
-  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
+userRouter.patch(
+  "/posts/:id",
+  validateRequest({ schema: idSchema, isQuery: false, isParam: true }),
   AuthVerifyMiddlware,
   userAuthentication,
-  PostController.activePost
-);
-
-userRouter.get(
-  "/posts/inactive",
-  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
-  AuthVerifyMiddlware,
-  userAuthentication,
-  PostController.inActivePost
+  PostController.updatePostStatus
 );
 
 userRouter.post(
@@ -141,12 +118,6 @@ userRouter.get(
   PostController.ownPosts
 );
 
-userRouter.get(
-  "/posts/user/pending",
-  AuthVerifyMiddlware,
-  userAuthentication,
-  PostController.ownPendingPost
-);
 
 userRouter.post(
   "/posts",
@@ -176,7 +147,7 @@ userRouter.get(
 
 userRouter.delete(
   "/posts/:id",
-  validateRequest({ schema: idSchema, isQuery: true, isParam: false }),
+  validateRequest({ schema: idSchema, isQuery: false, isParam: true }),
   AuthVerifyMiddlware,
   userAuthentication,
   PostController.deletePostByUser
@@ -189,7 +160,7 @@ userRouter.get(
   PostController.deletePostImages
 );
 
-//______Review______
+//______Review______//
 userRouter.post(
   "/reviews/:postId",
   AuthVerifyMiddlware,
@@ -219,7 +190,7 @@ userRouter.post(
   ReviewController.reportReview
 );
 
-//______Ticket Actions______
+//______Ticket Actions______//
 userRouter.post(
   "/tickets",
   validateRequest({

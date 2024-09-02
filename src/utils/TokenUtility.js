@@ -18,8 +18,8 @@ export const generateRefreshToken = (body) => {
     exp:
       Math.floor(Date.now() / 1000) +
       parseInt(process.env.JWT_REFRESH_TOKEN_EXPIRATION),
-    id: body._id,
-    role: body.role,
+    //Store the session id (ObjectId of session document)
+    id: body,
   };
   return jwt.sign(payload, process.env.JWT_REFRESH_TOKEN_SECRET);
 };

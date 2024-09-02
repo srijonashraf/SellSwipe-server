@@ -5,11 +5,16 @@ import { calculatePagination } from "./../utils/PaginationUtility.js";
 export const createTicketByUserService = async (req, next) => {
   try {
     const { title, description } = req.body;
-    const userID = req.headers.id;
+    const { id, name, role } = req.headers.id;
     const query = {
       title,
       description,
-      userID,
+      userID: id,
+      createdBy: {
+        userId: id,
+        name: name,
+        role: role,
+      },
     };
     const data = await TicketModel.create(query);
     if (!data) {
@@ -32,10 +37,10 @@ export const getUserTicketService = async (req, next) => {
       });
       return { status: "success", data: data };
     }
-    const data = await TicketModel.find({ userID: req.headers.id }).populate(
-      "assignedTo",
-      "name role"
-    );
+    const data = await TicketModel.find({ userID: req.headers.id })
+      .populate("assignments.assignedTo", "name role")
+      .populate("assignments.assignedBy", "name role")
+      .populate("userID", "name role");
 
     if (!data) {
       return { status: "fail", message: "Ticket or user not found" };
@@ -49,15 +54,15 @@ export const getUserTicketService = async (req, next) => {
 export const commentByUserService = async (req, next) => {
   try {
     const ticketID = req.params.id;
-    const { id, role, name } = req.headers;
+    const { id, name, role } = req.headers;
     const newComment = {
-      comment: req.body.comment,
       userId: id,
-      role,
-      name,
+      name: name,
+      role: role,
+      comment: req.body.comment,
     };
     const data = await TicketModel.findOneAndUpdate(
-      { _id: ticketID },
+      { _id: ticketID, userID: req.headers.id },
       { $push: { comments: newComment } },
       { new: true }
     );
@@ -80,11 +85,16 @@ export const createTicketByAdminService = async (req, next) => {
   try {
     const { userId } = req.params;
     const { title, description } = req.body;
+    const { id, name, role } = req.headers;
     const query = {
       userID: userId,
       title,
       description,
-      createdBy: req.headers.id,
+      createdBy: {
+        userId: id,
+        name: name,
+        role: role,
+      },
     };
     const data = await TicketModel.create(query);
     if (!data) {
@@ -101,7 +111,7 @@ export const getAllTicketService = async (req, next) => {
     const { status, priority, id, page, limit, sortBy, sortOrder } = req.query;
     const pagination = calculatePagination({ page, limit, sortBy, sortOrder });
 
-    if (id) query.id = new ObjectID(id);
+    if (id) query.id = id;
     if (status) query.status = status;
     if (priority) query.priority = priority;
 
@@ -113,8 +123,9 @@ export const getAllTicketService = async (req, next) => {
       })
       .limit(pagination.limit)
       .skip(pagination.skip)
-      .populate("assignedTo", "name role")
-      .populate("assignedBy", "name role");
+      .populate("assignments.assignedTo", "name role")
+      .populate("assignments.assignedBy", "name role")
+      .populate("userID", "name role");
 
     if (!data) {
       return { status: "fail", message: "Failed to load ticket" };
@@ -135,18 +146,17 @@ export const getAllTicketService = async (req, next) => {
 export const commentByAdminService = async (req, next) => {
   try {
     const ticketID = req.params.id;
-    const { id, role, name } = req.headers;
+    const { id, name, role } = req.headers;
 
     if (!req.body.comment) {
       return { status: "fail", message: "Comment not found" };
     }
 
-    // New comment structure
     const newComment = {
       comment: req.body.comment,
       userId: id,
-      role,
-      name,
+      name: name,
+      role: role,
     };
 
     // Initial query to update the comment
@@ -160,11 +170,18 @@ export const commentByAdminService = async (req, next) => {
       const ticket = await TicketModel.findById(ticketID);
 
       if (ticket) {
-        if (!ticket.assignedTo) {
-          updateQuery.$set = {
+        // If the assignments array is empty, initialize it with the new assignment
+        if (ticket.assignments.length === 0) {
+          updateQuery.$push.assignments = {
             assignedTo: id,
-            assignedBy: req.headers.id,
-            assignedAt: new Date(),
+            assignedBy: id,
+          };
+          updateQuery.$set = {
+            status: "In-Progress",
+          };
+        } else {
+          // If assignments already exist, only update the status
+          updateQuery.$set = {
             status: "In-Progress",
           };
         }
@@ -193,14 +210,12 @@ export const commentByAdminService = async (req, next) => {
     next(error);
   }
 };
+
 export const updateTicketStatusandPriorityService = async (req, next) => {
   try {
     let query = {};
     const ticketId = req.params.id;
     const { status, priority } = req.query;
-
-    console.log(status)
-    console.log(priority)
 
     if (status) {
       query.status = status;
@@ -233,11 +248,19 @@ export const assignNewAdminToTicketService = async (req, next) => {
     const { adminId } = req.body;
     const admin = await AdminModel.findById(adminId);
     if (admin) {
+      const newAssignment = {
+        assignedTo: adminId,
+        assignedBy: req.headers.id,
+      };
+
       const result = await TicketModel.findOneAndUpdate(
         { _id: ticketId },
-        { $set: { assignedTo: adminId, assignedBy: req.headers.id } },
+        { $push: { assignments: newAssignment } },
         { new: true }
       );
+      if (!result) {
+        return { status: "fail", message: "Failed to assign another admin" };
+      }
       return { status: "success", data: result };
     }
     return { status: "fail", message: "Failed to assign another admin" };

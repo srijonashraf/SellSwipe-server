@@ -1,5 +1,49 @@
 import mongoose from "mongoose";
 
+const CommentSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      required: true,
+    },
+    comment: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  }
+);
+
+const assignSchema = new mongoose.Schema(
+  {
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "admins",
+      required: true,
+    },
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "admins",
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  }
+);
+
 const ticketSchema = new mongoose.Schema(
   {
     title: {
@@ -17,8 +61,15 @@ const ticketSchema = new mongoose.Schema(
       index: true,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "admins",
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      name: {
+        type: String,
+      },
+      role: {
+        type: String,
+      },
     },
     status: {
       type: String,
@@ -35,37 +86,8 @@ const ticketSchema = new mongoose.Schema(
     resolvedAt: {
       type: Date,
     },
-    assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "admins",
-    },
-    assignedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "admins",
-    },
-    assignedAt: {
-      type: Date,
-    },
-    comments: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-        },
-        role: {
-          type: String,
-        },
-        name: {
-          type: String,
-        },
-        comment: {
-          type: String,
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    assignments: [assignSchema],
+    comments: [CommentSchema],
   },
   {
     timestamps: true,

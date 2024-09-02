@@ -46,7 +46,7 @@ export const userAuthentication = async (req, res, next) => {
     if (!user) {
       return res.status(403).json({
         status: "fail",
-        message: "Permission denied or account not found",
+        message: "Permission denied or user account not found",
       });
     }
 

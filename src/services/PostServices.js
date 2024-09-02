@@ -19,6 +19,7 @@ import {
   sendNotificationToAdmin,
   sendNotificationToUser,
 } from "../utils/NotificationsUtility.js";
+import { postStatus } from "../constants/Types.js";
 
 export const createPostService = async (req, next) => {
   try {
@@ -212,21 +213,19 @@ export const updatePostService = async (req, next) => {
 
 export const detailsPostService = async (req, next) => {
   try {
-    const postID = req.params.id;
+    // Convert req.params.id and req.query.nid to ObjectId
+    const postID = mongoose.Types.ObjectId.createFromHexString(req.params.id);
 
-    //Increment the view count to the post and show details
+    // Increment the view count for the post
     await PostModel.updateOne({ _id: postID }, { $inc: { viewsCount: 1 } });
 
+    // Create post validation query object
+    const postValidation = postValidationQuery({ _id: postID });
+
+    // Perform aggregation to get post details
     const response = await PostModel.aggregate([
       {
-        $match: {
-          _id: postID,
-          onReview: false,
-          isApproved: true,
-          isDeclined: false,
-          isActive: true,
-          isDeleted: false,
-        },
+        $match: postValidation,
       },
       {
         $lookup: {
@@ -242,13 +241,23 @@ export const detailsPostService = async (req, next) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-
+      {
+        $match: {
+          "user.accountStatus": { $in: ["Validate", "Warning"] },
+        },
+      },
       {
         $lookup: {
           from: "postdetails",
           localField: "_id",
           foreignField: "postID",
           as: "postdetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$postdetails",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -260,11 +269,23 @@ export const detailsPostService = async (req, next) => {
         },
       },
       {
+        $unwind: {
+          path: "$division",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $lookup: {
           from: "districts",
           localField: "districtID",
           foreignField: "_id",
           as: "district",
+        },
+      },
+      {
+        $unwind: {
+          path: "$district",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -277,11 +298,10 @@ export const detailsPostService = async (req, next) => {
       },
       {
         $unwind: {
-          path: "$postdetails",
+          path: "$area",
           preserveNullAndEmptyArrays: true,
         },
       },
-
       {
         $lookup: {
           from: "brands",
@@ -300,28 +320,23 @@ export const detailsPostService = async (req, next) => {
       },
       {
         $unwind: {
-          path: "$division",
+          path: "$postdetails.brand",
           preserveNullAndEmptyArrays: true,
         },
       },
       {
         $unwind: {
-          path: "$district",
+          path: "$postdetails.category",
           preserveNullAndEmptyArrays: true,
         },
       },
-      {
-        $unwind: {
-          path: "$area",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      // No need to unwind brand and category separately; they're inside postdetails
       {
         $project: {
           onReview: 0,
           isApproved: 0,
           isDeclined: 0,
+          approvedBy: 0,
+          declinedBy: 0,
           isActive: 0,
           isDeleted: 0,
           reportCount: 0,
@@ -341,8 +356,6 @@ export const detailsPostService = async (req, next) => {
           "user.accountStatus": 0,
           "user.sessionId": 0,
           "user.loginAttempt": 0,
-          "user.createdAt": 0,
-          "user.updatedAt": 0,
           "user.lastLogin": 0,
           "user.limitedLogin": 0,
           "user.lastRefresh": 0,
@@ -379,7 +392,7 @@ export const detailsPostService = async (req, next) => {
 
     return {
       status: "success",
-      data: response,
+      data: response[0],
     };
   } catch (error) {
     next(error);
@@ -389,14 +402,10 @@ export const detailsPostService = async (req, next) => {
 export const deletePostByUserService = async (req, next) => {
   const session = await mongoose.startSession();
   try {
-    const userID = new req.headers.id();
-    const postID = new req.params.id();
-
-    /* Transaction is used here because the full process is connected
-    with two database collections so if there is any issue with any of
-    those collections, it will revert the collections to the initial state */
-
-    session.startTransaction(); // Start transaction
+    // Start transaction
+    session.startTransaction();
+    const userID = req.headers.id;
+    const postID = req.params.id;
 
     // Delete post
     const post = await PostModel.deleteOne({
@@ -421,11 +430,12 @@ export const deletePostByUserService = async (req, next) => {
 
     // Commit transaction
     await session.commitTransaction();
-
     return { status: "success", message: "Post is deleted" };
   } catch (error) {
-    // Abort transaction on any error
-    await session.abortTransaction();
+    // Check if the transaction was started before attempting to abort
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     next(error);
   } finally {
     // End session only once in the finally block
@@ -522,10 +532,12 @@ export const getAllPostsService = async (req, next) => {
       sortOrder,
     });
     const postValidation = postValidationQuery();
+    const userValidation = {
+      "user.accountStatus": { $in: ["Validate", "Warning"] },
+    };
+    const validation = { ...postValidation, ...userValidation };
+
     const data = await PostModel.aggregate([
-      {
-        $match: postValidation,
-      },
       {
         $sort: {
           [pagination.sortBy]: pagination.sortOrder === "desc" ? -1 : 1,
@@ -578,9 +590,7 @@ export const getAllPostsService = async (req, next) => {
         $unwind: "$area",
       },
       {
-        $match: {
-          "user.accountStatus": { $in: ["Validate", "Warning"] },
-        },
+        $match: validation,
       },
       {
         $project: {
@@ -629,27 +639,20 @@ export const getAllPostsService = async (req, next) => {
 
 export const ownPostsService = async (req, next) => {
   try {
-    const postValidation = postValidationQuery({ userID: req.headers.id });
-    const posts = await PostModel.find(postValidation);
+    let postValidation;
+    const type = req.query.type;
 
-    if (posts.length === 0) {
-      return { status: "success", message: "No post found" };
+    if (type === "pending") {
+      postValidation = postValidationQuery({
+        userID: req.headers.id,
+        onReview: true,
+        isApproved: false,
+        isDeclined: false,
+      });
+    } else {
+      postValidation = postValidationQuery({ userID: req.headers.id });
     }
 
-    return { status: "success", data: posts };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const ownPendingPostService = async (req, next) => {
-  try {
-    const postValidation = postValidationQuery({
-      userID: req.headers.id,
-      onReview: true,
-      isApproved: false,
-      isDeclined: false,
-    });
     const posts = await PostModel.find(postValidation);
 
     if (posts.length === 0) {
@@ -788,14 +791,26 @@ export const favouritePostListService = async (req, next) => {
   }
 };
 
-export const activePostService = async (req, next) => {
+export const updatePostStatusService = async (req, next) => {
   try {
-    const postID = req.query.postId;
+    let query = {};
+    const status = req.query.status;
+    const postID = req.params.id;
     const userID = req.headers.id;
+
+    if (status === postStatus.ACTIVE_POST) {
+      query = {
+        $set: { isActive: true },
+      };
+    } else {
+      query = {
+        $set: { isActive: false },
+      };
+    }
 
     const result = await PostModel.findOneAndUpdate(
       { _id: postID, userID: userID },
-      { $set: { isActive: true } }
+      query
     );
 
     if (!result) {
@@ -807,33 +822,7 @@ export const activePostService = async (req, next) => {
 
     return {
       status: "success",
-      message: "Your post is now active",
-    };
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const inActivePostService = async (req, next) => {
-  try {
-    const postID = req.query.postId;
-    const userID = req.headers.id;
-
-    const result = await PostModel.findOneAndUpdate(
-      { _id: postID, userID: userID },
-      { $set: { isActive: false } }
-    );
-
-    if (!result) {
-      return {
-        status: "fail",
-        message: "Post or user not found",
-      };
-    }
-
-    return {
-      status: "success",
-      message: "Your post is now inactive",
+      message: `Your post is now ${status}`,
     };
   } catch (error) {
     next(error);
@@ -844,7 +833,7 @@ export const getSimilarPostsService = async (req, next) => {
   try {
     const { categoryID, brandID } = req.body;
 
-    const postValidationQuery = {
+    const postValidation = {
       "post.isApproved": true,
       "post.isActive": true,
       "post.onReview": false,
@@ -856,8 +845,8 @@ export const getSimilarPostsService = async (req, next) => {
     const data = await PostDetailsModel.aggregate([
       {
         $match: {
-          categoryID: categoryID,
-          brandID: brandID,
+          categoryID: mongoose.Types.ObjectId.createFromHexString(categoryID),
+          brandID: mongoose.Types.ObjectId.createFromHexString(brandID),
         },
       },
       { $sample: { size: 10 } },
@@ -888,7 +877,7 @@ export const getSimilarPostsService = async (req, next) => {
         },
       },
       {
-        $match: postValidationQuery,
+        $match: postValidation,
       },
       {
         $project: {
@@ -960,16 +949,10 @@ export const postSearchWithFiltersService = async (req, next) => {
     } = reqBody;
 
     // Query to check post validation
-    const postValidationQuery = {
-      isApproved: true,
-      isActive: true,
-      onReview: false,
-      isDeclined: false,
-      isDeleted: false,
-    };
+    const postValidation = postValidationQuery();
 
     //Query to check user validation
-    const userValidationQuery = {
+    const userValidation = {
       "user.accountStatus": { $in: ["Validate", "Warning"] },
     };
 
@@ -984,9 +967,15 @@ export const postSearchWithFiltersService = async (req, next) => {
     // Filter for Post Model
     const postFilterQuery = {};
 
-    if (divisionId) postFilterQuery.divisionID = divisionId;
-    if (districtId) postFilterQuery.districtID = districtId;
-    if (areaId) postFilterQuery.areaID = areaId;
+    if (divisionId)
+      postFilterQuery.divisionID =
+        mongoose.Types.ObjectId.createFromHexString(divisionId);
+    if (districtId)
+      postFilterQuery.districtID =
+        mongoose.Types.ObjectId.createFromHexString(districtId);
+    if (areaId)
+      postFilterQuery.areaID =
+        mongoose.Types.ObjectId.createFromHexString(areaId);
 
     // Price filter based on price and discountPrice
     const priceFilter = {
@@ -1015,10 +1004,16 @@ export const postSearchWithFiltersService = async (req, next) => {
     postFilterQuery.$and = [priceFilter];
 
     // Filter for postdetails collection
-    const postDetailsFilter = {};
-    if (brandId) postDetailsFilter["postdetails.brandID"] = brandId;
-    if (categoryId) postDetailsFilter["postdetails.categoryID"] = categoryId;
-    if (modelId) postDetailsFilter["postdetails.modelID"] = modelId;
+    const postDetailsFilterQuery = {};
+    if (brandId)
+      postDetailsFilterQuery["postdetails.brandID"] =
+        mongoose.Types.ObjectId.createFromHexString(brandId);
+    if (categoryId)
+      postDetailsFilterQuery["postdetails.categoryID"] =
+        mongoose.Types.ObjectId.createFromHexString(categoryId);
+    if (modelId)
+      postDetailsFilterQuery["postdetails.modelID"] =
+        mongoose.Types.ObjectId.createFromHexString(modelId);
 
     const data = await PostModel.aggregate([
       {
@@ -1094,10 +1089,10 @@ export const postSearchWithFiltersService = async (req, next) => {
       {
         $match: {
           $and: [
-            postValidationQuery,
+            postValidation,
+            userValidation,
             matchTitleDescription,
-            postDetailsFilter,
-            userValidationQuery,
+            postDetailsFilterQuery,
             postFilterQuery,
           ],
         },
@@ -1391,9 +1386,7 @@ export const approvePostService = async (req, next) => {
           onReview: false,
           declinedBy: null,
           isApproved: true,
-          "approvedBy.userId": id,
-          "approvedBy.name": name,
-          "approvedBy.role": role,
+          approvedBy: { userId: id, name: name, role: role },
         },
       }
     );
@@ -1432,9 +1425,7 @@ export const declinePostService = async (req, next) => {
           onReview: false,
           approvedBy: null,
           isDeclined: true,
-          "declinedBy.userId": id,
-          "declinedBy.name": name,
-          "declinedBy.role": role,
+          declinedBy: { userId: id, name: name, role: role },
         },
       }
     );
@@ -1442,7 +1433,7 @@ export const declinePostService = async (req, next) => {
     if (data.modifiedCount === 0) {
       return { status: "fail", message: "Failed to decline post" };
     }
-    return { status: "success", data: data };
+    return { status: "success", data: [], message: "Posts Declined" };
   } catch (error) {
     next(error);
   }

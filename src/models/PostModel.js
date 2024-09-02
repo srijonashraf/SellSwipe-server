@@ -1,11 +1,61 @@
 import mongoose from "mongoose";
 
-const PostSchema = mongoose.Schema(
+// Define the subschemas
+const AdminRefSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "admins",
+    },
+    name: {
+      type: String,
+    },
+    role: {
+      type: String,
+    },
+  },
+  { timestamps: true, versionKey: false }
+);
+
+const ReportSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users",
+    },
+    role: {
+      type: String,
+    },
+    causeOfReport: {
+      type: String,
+    },
+  },
+  { timestamps: true, versionKey: false }
+);
+
+const FeedbackSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "admins",
+    },
+    role: {
+      type: String,
+    },
+    comment: {
+      type: String,
+    },
+  },
+  { timestamps: true, versionKey: false }
+);
+
+// Define the main post schema
+const PostSchema = new mongoose.Schema(
   {
     userID: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: "user",
+      ref: "users",
     },
     title: {
       type: String,
@@ -41,40 +91,12 @@ const PostSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    approvedBy: {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-      },
-      name: {
-        type: String,
-      },
-      role: {
-        type: String,
-      },
-      createdAt: {
-        type: Date,
-        default: Date.now,
-      },
-    },
+    approvedBy: AdminRefSchema,
     isDeclined: {
       type: Boolean,
       default: false,
     },
-    declinedBy: {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-      },
-      name: {
-        type: String,
-      },
-      role: {
-        type: String,
-      },
-      createdAt: {
-        type: Date,
-        default: Date.now,
-      },
-    },
+    declinedBy: AdminRefSchema,
     isActive: {
       type: Boolean,
       default: true,
@@ -91,23 +113,7 @@ const PostSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
-    reportedBy: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-        },
-        role: {
-          type: String,
-        },
-        causeOfReport: {
-          type: String,
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    reportedBy: [ReportSchema],
     viewsCount: {
       type: Number,
       default: 0,
@@ -128,23 +134,7 @@ const PostSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    feedback: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-        },
-        role: {
-          type: String,
-        },
-        comment: {
-          type: String,
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    feedback: [FeedbackSchema],
   },
   {
     timestamps: true,

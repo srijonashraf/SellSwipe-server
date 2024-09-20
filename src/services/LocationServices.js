@@ -1,6 +1,5 @@
 import DivisionModel from "./../models/DivisionModel.js";
 import DistrictModel from "./../models/DistrictModel.js";
-import mongoose from "mongoose";
 import AreaModel from "./../models/AreaModel.js";
 import { inputSanitizer } from "../middlewares/RequestValidateMiddleware.js";
 

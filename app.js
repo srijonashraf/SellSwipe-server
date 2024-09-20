@@ -56,19 +56,6 @@ app.get("/", function (req, res) {
   );
 });
 
-//Checking the client ip address
-// app.get("/test", function (req, res, next) {
-//   const userAgentResponse = req.useragent;
-//   const reqIp = req.ip;
-//   const reqHeader = req.headers["x-forwarded-for"];
-//   const reqConnection = req.connection.remoteAddress;
-//   res.json({
-//     reqIp: reqIp,
-//     reqHeader: reqHeader,
-//     reqConnection: reqConnection,
-//   });
-// });
-
 app.use("/api/v1/", publicRouter); //Public Router
 app.use("/api/v1/user", userRouter); // Protected Router
 app.use("/api/v1/admin", adminRouter); //Admin Router

@@ -1,5 +1,5 @@
 import { baseUrl } from "../constants/BaseUrl.js";
-import { verificationTypes } from "../constants/Types.js";
+import { emailTypes, verificationTypes } from "../constants/Types.js";
 import {
   adminLoginService,
   sessionService,

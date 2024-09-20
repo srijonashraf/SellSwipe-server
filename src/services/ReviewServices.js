@@ -3,12 +3,10 @@ import {
   REPORT_CATEGORIES,
 } from "../constants/Notifications.js";
 import ReviewModel from "../models/ReviewModel.js";
-import {
-  sendNotificationToUser,
-  sendNotificationToAdmin,
-} from "../utils/NotificationsUtility.js";
+import { sendNotificationToAdmin } from "../utils/NotificationsUtility.js";
 import { calculatePagination } from "../utils/PaginationUtility.js";
 import { inputSanitizer } from "./../middlewares/RequestValidateMiddleware.js";
+
 export const createReviewService = async (req, next) => {
   try {
     inputSanitizer(req.body);

@@ -7,6 +7,7 @@ import * as PostController from "../controllers/PostController.js";
 import * as StatsController from "../controllers/StatsController.js";
 import * as LegalController from "../controllers/LegalController.js";
 import * as AuthController from "../controllers/AuthController.js";
+import * as ProductSliderController from "../controllers/ProductSliderController.js";
 import { validateRequest } from "../middlewares/RequestValidateMiddleware.js";
 import {
   userCredentialSchema,
@@ -75,5 +76,8 @@ publicRouter.get("/total-users", StatsController.getTotalUsers);
 publicRouter.get("/total-posts", StatsController.getTotalPosts);
 publicRouter.get("/total-categories", StatsController.getTotalCategories);
 publicRouter.get("/total-brands", StatsController.getTotalBrands);
+
+//____Sliders____//
+publicRouter.get("/sliders", ProductSliderController.getProductSlider);
 
 export default publicRouter;

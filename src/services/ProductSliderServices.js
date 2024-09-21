@@ -14,7 +14,7 @@ export const fetchLatestPostandSetSliderService = async () => {
         $sort: { createdAt: -1 },
       },
       {
-        $limit: 5,
+        $sample: { size: 5 },
       },
       {
         $lookup: {

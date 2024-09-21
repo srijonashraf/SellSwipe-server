@@ -1,9 +1,8 @@
 import PostModel from "../models/PostModel.js";
-import cron from "node-cron";
 import { postValidationQuery } from "../utils/PostValidationUtility.js";
 import SliderModel from "../models/SliderModel.js";
 
-const fetchLatestPosts = async () => {
+export const fetchLatestPostandSetSliderService = async () => {
   try {
     const postValidation = postValidationQuery();
 
@@ -51,9 +50,6 @@ const fetchLatestPosts = async () => {
     console.error("Error fetching latest posts for slider:", error);
   }
 };
-
-// Schedule the task to run every 5 hours
-cron.schedule("0 */5 * * *", fetchLatestPosts);
 
 export const getProductSliderService = async (req, next) => {
   try {

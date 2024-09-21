@@ -81,5 +81,9 @@ publicRouter.get("/total-brands", StatsController.getTotalBrands);
 
 //____Sliders____//
 publicRouter.get("/sliders", ProductSliderController.getProductSlider);
+publicRouter.get(
+  "/update-sliders",
+  ProductSliderController.fetchLatestPostandSetSlider
+);
 
 export default publicRouter;

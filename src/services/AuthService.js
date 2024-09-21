@@ -272,7 +272,7 @@ export const emailVerificationByLinkService = async (req, next) => {
       userID: userId,
       token: token,
       expired: false,
-      expiresAt: { $gte: currentTime },
+      expiresAt: { $gte: currentTime() },
     }).exec();
 
     if (!otpRecord) {
@@ -315,7 +315,7 @@ export const emailVerificationByOtpService = async (req, next) => {
       otp,
       email,
       expired: false,
-      expiresAt: { $gte: currentTime },
+      expiresAt: { $gte: currentTime() },
     }).exec();
 
     if (!otpResponse) {
@@ -369,7 +369,7 @@ export const verifyResetPasswordTokenService = async (req, next) => {
       email: user.email,
       token: token,
       expired: false,
-      expiresAt: { $gte: currentTime },
+      expiresAt: { $gte: currentTime() },
     }).exec();
 
     if (validToken) {
@@ -399,7 +399,7 @@ export const resetPasswordByLinkService = async (req, next) => {
       email: user.email,
       token,
       expired: false,
-      expiresAt: { $gte: currentTime },
+      expiresAt: { $gte: currentTime() },
     }).exec();
 
     if (!validToken) {
@@ -471,7 +471,7 @@ export const resetPasswordByOtpService = async (req, next) => {
       email: email,
       otp: otp,
       expired: false,
-      expiresAt: { $gte: currentTime },
+      expiresAt: { $gte: currentTime() },
     }).exec();
 
     if (!otpResponse) {

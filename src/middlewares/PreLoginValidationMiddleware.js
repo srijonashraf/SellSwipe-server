@@ -1,3 +1,4 @@
+import { currentTime } from "../constants/CurrectTime.js";
 import { errorCodes } from "../constants/ErrorCodes.js";
 import UserModel from "../models/UserModel.js";
 
@@ -5,7 +6,7 @@ export const preLoginValidation = async (req, res, next) => {
   try {
     const email = req.body.email;
     const user = await UserModel.findOne({ email: email })
-      .select("email emailVerified loginAttempt limitedLogin accountStatus")
+      .select("email emailVerified loginAttempt loginFreezeUntil accountStatus")
       .exec();
 
     if (!user) {
@@ -32,31 +33,24 @@ export const preLoginValidation = async (req, res, next) => {
       });
     }
 
-    // Check if limitedLogin time has passed and reset loginAttempt and limitedLogin
-    if (user.limitedLogin && user.limitedLogin <= Date.now()) {
+    // Reset login attempts if freeze time has passed
+    if (user.loginFreezeUntil && user.loginFreezeUntil <= currentTime()) {
       user.loginAttempt = 0;
-      user.limitedLogin = "";
+      user.loginFreezeUntil = null;
       await user.save();
     }
 
-    if (user.loginAttempt > 10) {
-      // Check if limitedLogin time has passed
-      if (user.limitedLogin && user.limitedLogin > Date.now()) {
-        return res.status(200).json({
-          status: "fail",
-          code: errorCodes.MAXIMUM_LOGIN_EXCEEDED.code,
-          message: errorCodes.MAXIMUM_LOGIN_EXCEEDED.message,
-        });
-      } else {
-        // Set limitedLogin to current time + 10 minutes
-        user.limitedLogin = Date.now() + 10 * 60 * 1000; // 10 minutes in milliseconds
+    if (user.loginAttempt >= 10) {
+      if (!user.loginFreezeUntil) {
+        user.loginFreezeUntil = currentTime() + 10 * 60 * 1000;
         await user.save();
-        return res.status(200).json({
-          status: "fail",
-          code: errorCodes.MAXIMUM_LOGIN_EXCEEDED.code,
-          message: errorCodes.MAXIMUM_LOGIN_EXCEEDED.message,
-        });
       }
+
+      return res.status(429).json({
+        status: "fail",
+        code: errorCodes.MAXIMUM_LOGIN_EXCEEDED.code,
+        message: errorCodes.MAXIMUM_LOGIN_EXCEEDED.message,
+      });
     }
 
     next();

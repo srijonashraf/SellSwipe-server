@@ -70,14 +70,16 @@ const UserSchema = mongoose.Schema(
       type: Number,
     },
     lastRefresh: {
-      type: String,
+      type: Date,
+      default: null,
     },
     loginAttempt: {
       type: Number,
       default: 0,
     },
-    limitedLogin: {
-      type: String,
+    loginFreezeUntil: {
+      type: Date,
+      default: null,
     },
   },
   {

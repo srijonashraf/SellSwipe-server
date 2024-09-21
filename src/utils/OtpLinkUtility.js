@@ -39,8 +39,8 @@ export const otpLinkUtility = async (req, email, userId, emailType) => {
     email: email,
     otp: otp,
     token: token,
-    initiated: currentTime,
-    expiresAt: currentTime + parseInt(process.env.OTP_EXPIRE_TIME),
+    initiated: currentTime(),
+    expiresAt: currentTime() + parseInt(process.env.OTP_EXPIRE_TIME),
     expired: false,
   });
 

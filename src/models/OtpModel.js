@@ -17,11 +17,11 @@ const OtpSchema = mongoose.Schema(
       type: String,
     },
     initiated: {
-      type: Number,
+      type: Date,
       default: Date.now,
     },
     expiresAt: {
-      type: Number,
+      type: Date,
     },
     expired: {
       type: Boolean,

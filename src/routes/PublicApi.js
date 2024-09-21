@@ -13,6 +13,7 @@ import {
   userCredentialSchema,
   userSchemaCreate,
 } from "../requests/UserSchema.js";
+import { preLoginValidation } from "../middlewares/PreLoginValidationMiddleware.js";
 
 const publicRouter = express.Router();
 
@@ -53,6 +54,7 @@ publicRouter.post(
     isParam: false,
     isQuery: false,
   }),
+  preLoginValidation,
   AuthController.userLogin
 );
 
